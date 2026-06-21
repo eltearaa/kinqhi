@@ -213,12 +213,11 @@ def format_voice_record_key_for_status(raw: Any) -> str:
     return prefix + key[0].upper() + key[1:]
 
 
-from tools.voice_mode import (
-    create_audio_recorder,
-    is_whisper_hallucination,
-    play_audio_file,
-    transcribe_recording,
-)
+# voice removed
+create_audio_recorder = None
+is_whisper_hallucination = None
+play_audio_file = None
+transcribe_recording = None
 
 logger = logging.getLogger(__name__)
 
@@ -779,7 +778,7 @@ def speak_text(text: str) -> None:
     _debug(f"speak_text: TTS begin (paused_recording={paused_recording})")
 
     try:
-        from tools.tts_tool import text_to_speech_tool
+        text_to_speech_tool = None  # TTS removed
 
         tts_text = text[:4000] if len(text) > 4000 else text
         tts_text = re.sub(r'```[\s\S]*?```', ' ', tts_text)             # fenced code blocks

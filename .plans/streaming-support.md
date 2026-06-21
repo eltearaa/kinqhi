@@ -1,4 +1,8 @@
-# Streaming LLM Response Support for Hermes Agent
+# Streaming LLM Response Support for Hermes Agent (Lean)
+
+> **Note:** This plan has been updated for the lean distribution. Only Discord and
+> API server remain as messaging platforms. Telegram, Slack, WhatsApp, and other
+> platform-specific streaming code has been removed.
 
 ## Overview
 

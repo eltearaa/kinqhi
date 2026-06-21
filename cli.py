@@ -5595,7 +5595,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
         image later with ``vision_analyze`` if needed.
         """
         import asyncio as _asyncio
-        from tools.vision_tools import vision_analyze_tool
+        vision_analyze_tool = None  # vision removed
 
         analysis_prompt = (
             "Describe everything visible in this image in thorough detail. "
@@ -9978,7 +9978,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
         """Start capturing audio from the microphone."""
         if getattr(self, '_should_exit', False):
             return
-        from tools.voice_mode import create_audio_recorder, check_voice_requirements
+        create_audio_recorder = check_voice_requirements = None  # voice removed
 
         reqs = check_voice_requirements()
         if not reqs["audio_available"]:
@@ -10216,7 +10216,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
             return
         self._voice_tts_done.clear()
         try:
-            from tools.tts_tool import text_to_speech_tool
+            text_to_speech_tool = None  # TTS removed
             from tools.voice_mode import play_audio_file
 
             # Strip markdown and non-speech content for cleaner TTS

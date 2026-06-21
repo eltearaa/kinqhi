@@ -3238,10 +3238,11 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
         # model, attach the screenshot directly instead of describing it through
         # an auxiliary vision LLM. The model inspects the pixels on its next
         # turn — no aux call, no information loss. Consistent with vision_analyze.
-        from tools.vision_tools import (
-            _build_native_vision_tool_result,
-            _should_use_native_vision_fast_path,
-        )
+        # vision tools removed
+        # _build_native_vision_tool_result,
+        # _should_use_native_vision_fast_path,
+        _build_native_vision_tool_result = lambda *a, **kw: None
+        _should_use_native_vision_fast_path = lambda *a, **kw: False
 
         if _should_use_native_vision_fast_path():
             native_result = _build_native_vision_tool_result(
@@ -3315,9 +3316,10 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
         try:
             response = call_llm(**call_kwargs)
         except Exception as _api_err:
-            from tools.vision_tools import (
-                _is_image_size_error, _resize_image_for_vision, _RESIZE_TARGET_BYTES,
-            )
+            # vision tools removed — stubs
+            _is_image_size_error = lambda e: False
+            _resize_image_for_vision = lambda d: d
+            _RESIZE_TARGET_BYTES = 10 * 1024 * 1024
             if (_is_image_size_error(_api_err)
                     and len(data_url) > _RESIZE_TARGET_BYTES):
                 logger.info(

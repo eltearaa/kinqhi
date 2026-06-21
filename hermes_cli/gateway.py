@@ -4845,7 +4845,7 @@ def _setup_weixin():
             return
 
     try:
-        from gateway.platforms.weixin import check_weixin_requirements, qr_login
+        check_weixin_requirements = qr_login = None  # weixin removed
     except Exception as exc:
         print_error(f"  Weixin adapter import failed: {exc}")
         print_info("  Install gateway dependencies first, then retry.")
@@ -5021,7 +5021,7 @@ def _setup_qqbot():
     if method_idx == 0:
         # ── QR scan-to-configure ──
         try:
-            from gateway.platforms.qqbot import qr_register
+            qr_register = None  # qqbot removed
 
             credentials = qr_register()
         except KeyboardInterrupt:

@@ -1689,12 +1689,6 @@ from gateway.restart import (
 )
 
 
-from gateway.whatsapp_identity import (
-    canonical_whatsapp_identifier as _canonical_whatsapp_identifier,  # noqa: F401
-    expand_whatsapp_aliases as _expand_whatsapp_auth_aliases,
-    normalize_whatsapp_identifier as _normalize_whatsapp_identifier,
-)
-
 
 logger = logging.getLogger(__name__)
 
@@ -2751,7 +2745,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         teams_pipeline plugin isn't enabled — lets the gateway start cleanly
         whether or not the user has opted into the pipeline.
         """
-        if Platform.MSGRAPH_WEBHOOK not in self.adapters:
+        if getattr(Platform, "MSGRAPH_WEBHOOK", None) not in self.adapters:
             return
         if not _teams_pipeline_plugin_enabled():
             logger.debug("Teams pipeline plugin is disabled; skipping runtime wiring")
@@ -2788,7 +2782,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             return
 
         connected = self.config.get_connected_platforms()
-        messaging_platforms = [p for p in connected if p not in {Platform.LOCAL, Platform.API_SERVER, Platform.WEBHOOK}]
+        messaging_platforms = [p for p in connected if p not in {Platform.LOCAL, Platform.API_SERVER, getattr(Platform, "WEBHOOK", None)}]
         if not messaging_platforms:
             return
 
@@ -3073,7 +3067,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
     def _telegram_topic_mode_enabled(self, source: SessionSource) -> bool:
         """Return whether Telegram DM topic mode is active for this chat."""
-        if source.platform != Platform.TELEGRAM or source.chat_type != "dm":
+        if source.platform != getattr(Platform, "TELEGRAM", None) or source.chat_type != "dm":
             return False
         session_db = getattr(self, "_session_db", None)
         if session_db is None:
@@ -3098,7 +3092,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
     def _is_telegram_topic_root_lobby(self, source: SessionSource) -> bool:
         """True for the main Telegram DM (or General topic) when topic mode has made it a lobby."""
-        if source.platform != Platform.TELEGRAM or source.chat_type != "dm":
+        if source.platform != getattr(Platform, "TELEGRAM", None) or source.chat_type != "dm":
             return False
         if not self._telegram_topic_mode_enabled(source):
             return False
@@ -3107,7 +3101,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
     def _is_telegram_topic_lane(self, source: SessionSource) -> bool:
         """True for a user-created Telegram private-chat topic lane."""
-        if source.platform != Platform.TELEGRAM or source.chat_type != "dm":
+        if source.platform != getattr(Platform, "TELEGRAM", None) or source.chat_type != "dm":
             return False
         if not self._telegram_topic_mode_enabled(source):
             return False
@@ -3225,7 +3219,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         answer into an older lane. Returns None to leave the source alone.
         """
         if (
-            source.platform != Platform.TELEGRAM
+            source.platform != getattr(Platform, "TELEGRAM", None)
             or source.chat_type != "dm"
             or not source.chat_id
             or not source.user_id
@@ -4204,10 +4198,10 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 content=message,
                 reply_to=(
                     reply_anchor
-                    if event.source.platform == Platform.TELEGRAM
+                    if event.source.platform == getattr(Platform, "TELEGRAM", None)
                     and event.source.chat_type == "dm"
                     and event.source.thread_id
-                    else (None if event.source.platform == Platform.TELEGRAM and event.source.thread_id else event.message_id)
+                    else (None if event.source.platform == getattr(Platform, "TELEGRAM", None) and event.source.thread_id else event.message_id)
                 ),
                 metadata=thread_meta,
             )
@@ -4425,10 +4419,10 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 content=message,
                 reply_to=(
                     reply_anchor
-                    if event.source.platform == Platform.TELEGRAM
+                    if event.source.platform == getattr(Platform, "TELEGRAM", None)
                     and event.source.chat_type == "dm"
                     and event.source.thread_id
-                    else (None if event.source.platform == Platform.TELEGRAM and event.source.thread_id else event.message_id)
+                    else (None if event.source.platform == getattr(Platform, "TELEGRAM", None) and event.source.thread_id else event.message_id)
                 ),
                 metadata=thread_meta,
             )
@@ -7057,7 +7051,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             logger.debug("Platform registry lookup for '%s' failed: %s", platform.value, e)
         # Fall through to built-in adapters below
 
-        if platform == Platform.WHATSAPP_CLOUD:
+        if platform == getattr(Platform, "WHATSAPP_CLOUD", None):
             from gateway.platforms.whatsapp_cloud import (
                 WhatsAppCloudAdapter,
                 check_whatsapp_cloud_requirements,
@@ -7069,14 +7063,14 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 return None
             return WhatsAppCloudAdapter(config)
         
-        elif platform == Platform.SIGNAL:
+        elif platform == getattr(Platform, "SIGNAL", None):
             from gateway.platforms.signal import SignalAdapter, check_signal_requirements
             if not check_signal_requirements():
                 logger.warning("Signal: SIGNAL_HTTP_URL or SIGNAL_ACCOUNT not configured")
                 return None
             return SignalAdapter(config)
 
-        elif platform == Platform.WEIXIN:
+        elif platform == getattr(Platform, "WEIXIN", None):
             from gateway.platforms.weixin import WeixinAdapter, check_weixin_requirements
             if not check_weixin_requirements():
                 logger.warning("Weixin: aiohttp/cryptography not installed")
@@ -7090,7 +7084,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 return None
             return APIServerAdapter(config)
 
-        elif platform == Platform.WEBHOOK:
+        elif platform == getattr(Platform, "WEBHOOK", None):
             from gateway.platforms.webhook import WebhookAdapter, check_webhook_requirements
             if not check_webhook_requirements():
                 logger.warning("Webhook: aiohttp not installed")
@@ -7099,7 +7093,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             adapter.gateway_runner = self  # For cross-platform delivery
             return adapter
 
-        elif platform == Platform.MSGRAPH_WEBHOOK:
+        elif platform == getattr(Platform, "MSGRAPH_WEBHOOK", None):
             from gateway.platforms.msgraph_webhook import (
                 MSGraphWebhookAdapter,
                 check_msgraph_webhook_requirements,
@@ -7109,21 +7103,21 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 return None
             return MSGraphWebhookAdapter(config)
 
-        elif platform == Platform.BLUEBUBBLES:
+        elif platform == getattr(Platform, "BLUEBUBBLES", None):
             from gateway.platforms.bluebubbles import BlueBubblesAdapter, check_bluebubbles_requirements
             if not check_bluebubbles_requirements():
                 logger.warning("BlueBubbles: aiohttp/httpx missing or BLUEBUBBLES_SERVER_URL/BLUEBUBBLES_PASSWORD not configured")
                 return None
             return BlueBubblesAdapter(config)
 
-        elif platform == Platform.QQBOT:
+        elif platform == getattr(Platform, "QQBOT", None):
             from gateway.platforms.qqbot import QQAdapter, check_qq_requirements
             if not check_qq_requirements():
                 logger.warning("QQBot: aiohttp/httpx missing or QQ_APP_ID/QQ_CLIENT_SECRET not configured")
                 return None
             return QQAdapter(config)
 
-        elif platform == Platform.YUANBAO:
+        elif platform == getattr(Platform, "YUANBAO", None):
             from gateway.platforms.yuanbao import YuanbaoAdapter, WEBSOCKETS_AVAILABLE
             if not WEBSOCKETS_AVAILABLE:
                 logger.warning("Yuanbao: websockets not installed. Run: pip install websockets")
@@ -7747,7 +7741,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             )
             _started_at = self._running_agents_ts.get(_quick_key, 0)
             if (
-                source.platform == Platform.TELEGRAM
+                source.platform == getattr(Platform, "TELEGRAM", None)
                 and event.message_type == MessageType.TEXT
                 and _telegram_followup_grace > 0
                 and _started_at
@@ -9350,7 +9344,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         
         # One-time prompt if no home channel is set for this platform
         # Skip for webhooks - they deliver directly to configured targets (github_comment, etc.)
-        if not history and source.platform and source.platform != Platform.LOCAL and source.platform != Platform.WEBHOOK:
+        if not history and source.platform and source.platform != Platform.LOCAL and source.platform != getattr(Platform, "WEBHOOK", None):
             platform_name = source.platform.value
             env_key = _home_target_env_var(platform_name)
             if not os.getenv(env_key):
@@ -9359,7 +9353,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 # registered and would fail with "app did not respond".
                 sethome_cmd = (
                     "/hermes sethome"
-                    if source.platform == Platform.SLACK
+                    if source.platform == getattr(Platform, "SLACK", None)
                     else "/sethome"
                 )
                 notice = (
@@ -9592,12 +9586,12 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     "show_reasoning",
                     default=bool(getattr(self, "_show_reasoning", False)),
                     platform=source.platform,
-                    require_platform_override_for={Platform.MATTERMOST},
+                    require_platform_override_for={getattr(Platform, "MATTERMOST", None)},
                 )
             except Exception:
                 _show_reasoning_effective = (
                     False
-                    if source.platform == Platform.MATTERMOST
+                    if source.platform == getattr(Platform, "MATTERMOST", None)
                     else getattr(self, "_show_reasoning", False)
                 )
             if _show_reasoning_effective and response and not _intentional_silence:
@@ -10845,7 +10839,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
             # Telegram's adapter only sends native voice bubbles for OGG/Opus.
             # Other platforms keep the existing MP3 default.
-            audio_ext = "ogg" if event.source.platform == Platform.TELEGRAM else "mp3"
+            audio_ext = "ogg" if event.source.platform == getattr(Platform, "TELEGRAM", None) else "mp3"
             audio_path = os.path.join(
                 tempfile.gettempdir(), "hermes_voice",
                 f"tts_reply_{_uuid.uuid4().hex[:12]}.{audio_ext}",
@@ -12017,7 +12011,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         adapter: Optional[Any] = None,
     ) -> bool:
         """Return True when a target is a Telegram private DM topic lane."""
-        if platform != Platform.TELEGRAM or thread_id is None:
+        if platform != getattr(Platform, "TELEGRAM", None) or thread_id is None:
             return False
         if chat_type == "dm":
             return True
@@ -12060,10 +12054,10 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     # ``allow_update_command=True`` on their ``PlatformEntry`` and are
     # honored via the registry fallback at ``_handle_update_command`` below.
     _UPDATE_ALLOWED_PLATFORMS = frozenset({
-        Platform.TELEGRAM, Platform.SLACK, Platform.WHATSAPP,
-        Platform.SIGNAL, Platform.MATRIX,
-        Platform.EMAIL, Platform.SMS, Platform.DINGTALK,
-        Platform.FEISHU, Platform.WECOM, Platform.WECOM_CALLBACK, Platform.WEIXIN, Platform.BLUEBUBBLES, Platform.QQBOT, Platform.LOCAL,
+        getattr(Platform, "TELEGRAM", None), getattr(Platform, "SLACK", None), getattr(Platform, "WHATSAPP", None),
+        getattr(Platform, "SIGNAL", None), getattr(Platform, "MATRIX", None),
+        getattr(Platform, "EMAIL", None), getattr(Platform, "SMS", None), getattr(Platform, "DINGTALK", None),
+        getattr(Platform, "FEISHU", None), getattr(Platform, "WECOM", None), getattr(Platform, "WECOM_CALLBACK", None), getattr(Platform, "WEIXIN", None), getattr(Platform, "BLUEBUBBLES", None), getattr(Platform, "QQBOT", None), Platform.LOCAL,
     })
 
 
@@ -14029,7 +14023,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     _adapter_supports_edit = getattr(_adapter, "SUPPORTS_MESSAGE_EDITING", True)
                     _effective_cursor = _scfg.cursor if _adapter_supports_edit else ""
                     _buffer_only = False
-                    if source.platform == Platform.MATRIX:
+                    if source.platform == getattr(Platform, "MATRIX", None):
                         _effective_cursor = ""
                         _buffer_only = True
                     # Fresh-final applies to Telegram only — other
@@ -14038,7 +14032,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     # problem.  (Ported from openclaw/openclaw#72038.)
                     _fresh_final_secs = (
                         float(getattr(_scfg, "fresh_final_after_seconds", 0.0) or 0.0)
-                        if source.platform == Platform.TELEGRAM
+                        if source.platform == getattr(Platform, "TELEGRAM", None)
                         else 0.0
                     )
                     _consumer_cfg = StreamConsumerConfig(
@@ -14359,19 +14353,19 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # Disable tool progress for webhooks - they don't support message editing,
         # so each progress line would be sent as a separate message.
         from gateway.config import Platform
-        tool_progress_enabled = progress_mode != "off" and source.platform != Platform.WEBHOOK
+        tool_progress_enabled = progress_mode != "off" and source.platform != getattr(Platform, "WEBHOOK", None)
         # Natural assistant status messages are intentionally independent from
         # tool progress and token streaming. Users can keep tool_progress quiet
         # in chat platforms while opting into concise mid-turn updates.
         interim_assistant_messages_enabled = (
-            source.platform != Platform.WEBHOOK
+            source.platform != getattr(Platform, "WEBHOOK", None)
             and _resolve_gateway_display_bool(
                 user_config,
                 platform_key,
                 "interim_assistant_messages",
                 default=True,
                 platform=source.platform,
-                require_platform_override_for={Platform.MATTERMOST},
+                require_platform_override_for={getattr(Platform, "MATTERMOST", None)},
             )
         )
         # thinking_progress is independent — if enabled, we need the progress
@@ -14384,7 +14378,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             "thinking_progress",
             default=False,
             platform=source.platform,
-            require_platform_override_for={Platform.MATTERMOST},
+            require_platform_override_for={getattr(Platform, "MATTERMOST", None)},
         )
         needs_progress_queue = tool_progress_enabled or _thinking_enabled
 
@@ -14670,7 +14664,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         _progress_metadata = _non_conversational_metadata(_progress_metadata, platform=source.platform)
         _progress_reply_to = (
             event_message_id
-            if source.platform in (Platform.FEISHU, Platform.MATTERMOST) and source.thread_id and event_message_id
+            if source.platform in (getattr(Platform, "FEISHU", None), getattr(Platform, "MATTERMOST", None)) and source.thread_id and event_message_id
             else None
         )
 
@@ -15055,7 +15049,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # Bridge sync status_callback → async adapter.send for context pressure
         _status_adapter = self.adapters.get(source.platform)
         _status_chat_id = source.chat_id
-        if source.platform == Platform.FEISHU and source.thread_id and event_message_id:
+        if source.platform == getattr(Platform, "FEISHU", None) and source.thread_id and event_message_id:
             # Feishu topics only keep messages inside the topic when they are
             # sent via the reply API with reply_in_thread=true. Status/interim,
             # approval, and stream-consumer paths usually only receive metadata,
@@ -15196,7 +15190,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                         # as a visible tofu/white-box artifact.  Keep
                         # streaming text on Matrix, but suppress the cursor.
                         _buffer_only = False
-                        if source.platform == Platform.MATRIX:
+                        if source.platform == getattr(Platform, "MATRIX", None):
                             _effective_cursor = ""
                             _buffer_only = True
                         # Fresh-final applies to Telegram only — other
@@ -15205,7 +15199,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                         # (Ported from openclaw/openclaw#72038.)
                         _fresh_final_secs = (
                             float(getattr(_scfg, "fresh_final_after_seconds", 0.0) or 0.0)
-                            if source.platform == Platform.TELEGRAM
+                            if source.platform == getattr(Platform, "TELEGRAM", None)
                             else 0.0
                         )
                         _consumer_cfg = StreamConsumerConfig(
@@ -15905,7 +15899,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 # worst case the message lands in General, which is the
                 # pre-fix behaviour.
                 if (
-                    getattr(source, "platform", None) == Platform.TELEGRAM
+                    getattr(source, "platform", None) == getattr(Platform, "TELEGRAM", None)
                     and getattr(source, "chat_type", None) == "dm"
                     and getattr(source, "thread_id", None) is None
                     and self._session_db is not None

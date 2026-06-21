@@ -131,7 +131,7 @@ def _xai_credentials_present() -> bool:
     except Exception:
         pass
     try:
-        from tools.xai_http import get_env_value as _xai_get_env_value
+        def _xai_get_env_value(*a, **kw): return None  # xAI removed
 
         if str(_xai_get_env_value("XAI_API_KEY") or "").strip():
             return True
@@ -2447,7 +2447,7 @@ def _detect_active_provider_index(
 
 def _fal_model_catalog():
     """Lazy-load the FAL model catalog from the tool module."""
-    from tools.image_generation_tool import FAL_MODELS, DEFAULT_MODEL
+    FAL_MODELS = {}; DEFAULT_MODEL = None  # image_gen removed
     return FAL_MODELS, DEFAULT_MODEL
 
 

@@ -38,7 +38,6 @@ logger = logging.getLogger(__name__)
 # every time. Cleared automatically when the file changes (different mtime).
 _CONFIG_PARSE_WARNED: set = set()
 
-
 def _backup_corrupt_config(config_path: Path) -> Optional[Path]:
     """Preserve a corrupted ``config.yaml`` by copying it to a timestamped ``.bak``.
 
@@ -91,7 +90,6 @@ def _backup_corrupt_config(config_path: Path) -> Optional[Path]:
         return backup_path
     except Exception:
         return None
-
 
 def _warn_config_parse_failure(config_path: Path, exc: Exception) -> None:
     """Surface a config.yaml parse failure to user, log, and stderr.
@@ -198,7 +196,6 @@ _ENV_VAR_NAME_DENYLIST: frozenset[str] = frozenset({
     "HERMES_HOME", "HERMES_PROFILE", "HERMES_CONFIG", "HERMES_ENV",
 })
 
-
 def _reject_denylisted_env_var(key: str) -> None:
     """Raise if ``key`` is in :data:`_ENV_VAR_NAME_DENYLIST`.
 
@@ -301,7 +298,6 @@ import yaml
 from hermes_cli.colors import Colors, color
 from hermes_cli.default_soul import DEFAULT_SOUL_MD
 
-
 # =============================================================================
 # Managed mode (NixOS declarative config)
 # =============================================================================
@@ -313,7 +309,6 @@ _MANAGED_SYSTEM_NAMES = {
     "nix": "NixOS",
     "nixos": "NixOS",
 }
-
 
 def get_managed_system() -> Optional[str]:
     """Return the package manager owning this install, if any."""
@@ -329,7 +324,6 @@ def get_managed_system() -> Optional[str]:
         return "NixOS"
     return None
 
-
 def is_managed() -> bool:
     """Check if Hermes is running in package-manager-managed mode.
 
@@ -339,9 +333,7 @@ def is_managed() -> bool:
     """
     return get_managed_system() is not None
 
-
 _NIX_UPDATE_MSG = "Update your Nix flake input and rebuild (e.g. nix flake update, nixos-rebuild, or home-manager switch)"
-
 
 def get_managed_update_command() -> Optional[str]:
     """Return the preferred upgrade command for a managed install."""
@@ -351,7 +343,6 @@ def get_managed_update_command() -> Optional[str]:
     if managed_system == "NixOS":
         return _NIX_UPDATE_MSG
     return None
-
 
 def _install_method_project_root(project_root: Optional[Path] = None) -> Path:
     """Resolve the directory that holds the *running code* (the install tree).
@@ -365,7 +356,6 @@ def _install_method_project_root(project_root: Optional[Path] = None) -> Path:
     if project_root is not None:
         return project_root
     return Path(__file__).parent.parent.resolve()
-
 
 def detect_install_method(project_root: Optional[Path] = None) -> str:
     """Detect how Hermes was installed: 'docker', 'nixos', 'homebrew', 'git', or 'pip'.
@@ -443,7 +433,6 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
         return "git"
     return "pip"
 
-
 def _running_in_container() -> bool:
     """Thin wrapper around ``hermes_constants.is_container`` (import-safe)."""
     try:
@@ -452,7 +441,6 @@ def _running_in_container() -> bool:
         return is_container()
     except Exception:
         return False
-
 
 def stamp_install_method(method: str, project_root: Optional[Path] = None) -> None:
     """Write the install method next to the running code (code-scoped stamp).
@@ -473,7 +461,6 @@ def stamp_install_method(method: str, project_root: Optional[Path] = None) -> No
         (root / ".install_method").write_text(method + "\n", encoding="utf-8")
     except OSError:
         pass
-
 
 def is_uv_tool_install() -> bool:
     """Return True when the *running* Hermes lives in a ``uv tool`` layout.
@@ -502,7 +489,6 @@ def is_uv_tool_install() -> bool:
         return True
     return False
 
-
 def recommended_update_command_for_method(method: str) -> str:
     """Return the update command or guidance for a given install method."""
     if method == "nixos":
@@ -520,7 +506,6 @@ def recommended_update_command_for_method(method: str) -> str:
         return "pip install --upgrade hermes-agent"
     return "hermes update"
 
-
 def recommended_update_command() -> str:
     """Return the best update command for the current installation."""
     managed_cmd = get_managed_update_command()
@@ -528,7 +513,6 @@ def recommended_update_command() -> str:
         return managed_cmd
     method = detect_install_method()
     return recommended_update_command_for_method(method)
-
 
 # Long-form text for ``hermes update`` / ``--check`` when running inside the
 # Docker image.  Surfaced by ``cmd_update`` and ``_cmd_update_check`` in
@@ -571,7 +555,6 @@ Notes:
   • Running a fork?  Build your own image with this repo's ``Dockerfile``
     and replace the ``docker pull`` step with your build/push pipeline."""
 
-
 def format_docker_update_message() -> str:
     """Return the user-facing message for ``hermes update`` inside Docker.
 
@@ -580,7 +563,6 @@ def format_docker_update_message() -> str:
     above for the full rationale.
     """
     return _DOCKER_UPDATE_MESSAGE
-
 
 def format_managed_message(action: str = "modify this Hermes installation") -> str:
     """Build a user-facing error for managed installs."""
@@ -613,7 +595,6 @@ def format_managed_message(action: str = "modify this Hermes installation") -> s
 def managed_error(action: str = "modify configuration"):
     """Print user-friendly error for managed mode."""
     print(format_managed_message(action), file=sys.stderr)
-
 
 # =============================================================================
 # Container-aware CLI (NixOS container mode)
@@ -662,7 +643,6 @@ def get_container_exec_info() -> Optional[dict]:
         "exec_user": exec_user,
         "hermes_bin": hermes_bin,
     }
-
 
 # =============================================================================
 # Config paths
@@ -713,7 +693,6 @@ def _resolve_hermes_uid_gid() -> tuple[Optional[int], Optional[int]]:
         gid = None
     return uid, gid
 
-
 def _chown_to_hermes_uid(path) -> None:
     """Chown ``path`` to ``HERMES_UID:HERMES_GID`` if those env vars are set.
 
@@ -741,7 +720,6 @@ def _chown_to_hermes_uid(path) -> None:
         # both of which are non-fatal — the dir is still created and
         # the entrypoint's startup chown -R will fix it on next restart.
         pass
-
 
 def _secure_dir(path):
     """Set directory to owner-only access (0700 by default). No-op on Windows.
@@ -774,7 +752,6 @@ def _secure_dir(path):
         pass
     _chown_to_hermes_uid(path)
 
-
 def _is_container() -> bool:
     """Detect if we're running inside a Docker/Podman/LXC container.
 
@@ -799,7 +776,6 @@ def _is_container() -> bool:
         pass
     return False
 
-
 def _secure_file(path):
     """Set file to owner-only read/write (0600). No-op on Windows.
 
@@ -817,7 +793,6 @@ def _secure_file(path):
     except (OSError, NotImplementedError):
         pass
 
-
 def _ensure_default_soul_md(home: Path) -> None:
     """Seed a default SOUL.md into HERMES_HOME if the user doesn't have one yet."""
     soul_path = home / "SOUL.md"
@@ -825,7 +800,6 @@ def _ensure_default_soul_md(home: Path) -> None:
         return
     soul_path.write_text(DEFAULT_SOUL_MD, encoding="utf-8")
     _secure_file(soul_path)
-
 
 def ensure_hermes_home():
     """Ensure ~/.hermes directory structure exists with secure permissions.
@@ -853,7 +827,6 @@ def ensure_hermes_home():
             _secure_dir(d)
         _ensure_default_soul_md(home)
 
-
 def _ensure_hermes_home_managed(home: Path):
     """Managed-mode variant: verify dirs exist (activation creates them), seed SOUL.md."""
     if not home.is_dir():
@@ -874,7 +847,6 @@ def _ensure_hermes_home_managed(home: Path):
     (home / "logs" / "curator").mkdir(parents=True, exist_ok=True)
     # Inside umask(0o007) scope — SOUL.md will be created as 0660
     _ensure_default_soul_md(home)
-
 
 # =============================================================================
 # Config loading/saving
@@ -2685,7 +2657,6 @@ DEFAULT_CONFIG = {
         "servers": {},
     },
 
-
     # X (Twitter) Search via xAI's built-in x_search Responses tool.
     # The tool registers when xAI credentials are available (SuperGrok
     # OAuth or XAI_API_KEY) AND the x_search toolset is enabled in
@@ -2762,7 +2733,6 @@ DEFAULT_CONFIG = {
     "paste_collapse_threshold": 5,
     "paste_collapse_threshold_fallback": 5,
     "paste_collapse_char_threshold": 2000,
-
 
     # Config schema version - bump this when adding new required fields
     "_config_version": 30,
@@ -2985,14 +2955,6 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "MINIMAX_API_KEY": {
-        "description": "MiniMax API key (international)",
-        "prompt": "MiniMax API key",
-        "url": "https://www.minimax.io/",
-        "password": True,
-        "category": "provider",
-        "advanced": True,
-    },
     "MINIMAX_BASE_URL": {
         "description": "MiniMax base URL override",
         "prompt": "MiniMax base URL (leave empty for default)",
@@ -3109,13 +3071,6 @@ OPTIONAL_ENV_VARS = {
         "password": False,
         "category": "provider",
         "advanced": True,
-    },
-    "HF_TOKEN": {
-        "description": "Hugging Face token for Inference Providers (20+ open models via router.huggingface.co)",
-        "prompt": "Hugging Face Token",
-        "url": "https://huggingface.co/settings/tokens",
-        "password": True,
-        "category": "provider",
     },
     "HF_BASE_URL": {
         "description": "Hugging Face Inference Providers base URL override",
@@ -3325,14 +3280,6 @@ OPTIONAL_ENV_VARS = {
         "password": False,
         "category": "tool",
     },
-    "FAL_KEY": {
-        "description": "FAL API key for image and video generation",
-        "prompt": "FAL API key",
-        "url": "https://fal.ai/",
-        "tools": ["image_generate", "video_generate"],
-        "password": True,
-        "category": "tool",
-    },
     "KREA_API_KEY": {
         "description": "Krea API key for Krea 2 image generation (Medium + Large)",
         "prompt": "Krea API key",
@@ -3411,19 +3358,6 @@ OPTIONAL_ENV_VARS = {
     },
 
     # ── Honcho ──
-    "HONCHO_API_KEY": {
-        "description": "Honcho API key for AI-native persistent memory",
-        "prompt": "Honcho API key",
-        "url": "https://app.honcho.dev",
-        "tools": ["honcho_context"],
-        "password": True,
-        "category": "tool",
-    },
-    "HONCHO_BASE_URL": {
-        "description": "Base URL for self-hosted Honcho instances (no API key needed)",
-        "prompt": "Honcho base URL (e.g. http://localhost:8000)",
-        "category": "tool",
-    },
 
     # ── Langfuse observability ──
     "HERMES_LANGFUSE_PUBLIC_KEY": {
@@ -3450,13 +3384,6 @@ OPTIONAL_ENV_VARS = {
     },
 
     # ── Messaging platforms ──
-    "TELEGRAM_BOT_TOKEN": {
-        "description": "Telegram bot token from @BotFather",
-        "prompt": "Telegram bot token",
-        "url": "https://t.me/BotFather",
-        "password": True,
-        "category": "messaging",
-    },
     "TELEGRAM_ALLOWED_USERS": {
         "description": "Comma-separated Telegram user IDs allowed to use the bot (get ID from @userinfobot)",
         "prompt": "Allowed Telegram user IDs (comma-separated)",
@@ -3489,26 +3416,6 @@ OPTIONAL_ENV_VARS = {
         "prompt": "Discord reply mode (off/first/all)",
         "url": None,
         "password": False,
-        "category": "messaging",
-    },
-    "SLACK_BOT_TOKEN": {
-        "description": "Slack bot token (xoxb-). Get from OAuth & Permissions after installing your app. "
-                       "Required scopes: chat:write, app_mentions:read, channels:history, groups:history, "
-                       "im:history, im:read, im:write, users:read, files:read, files:write",
-        "prompt": "Slack Bot Token (xoxb-...)",
-        "help": "In your Slack app, add the required bot scopes, install the app to the workspace, then copy OAuth & Permissions > Bot User OAuth Token.",
-        "url": "https://api.slack.com/apps",
-        "password": True,
-        "category": "messaging",
-    },
-    "SLACK_APP_TOKEN": {
-        "description": "Slack app-level token (xapp-) for Socket Mode. Get from Basic Information → "
-                       "App-Level Tokens. Also ensure Event Subscriptions include: message.im, "
-                       "message.channels, message.groups, app_mention",
-        "prompt": "Slack App Token (xapp-...)",
-        "help": "In your Slack app, enable Socket Mode, then create Basic Information > App-Level Tokens with the connections:write scope.",
-        "url": "https://api.slack.com/apps",
-        "password": True,
         "category": "messaging",
     },
     "SLACK_ALLOWED_USERS": {
@@ -3550,27 +3457,6 @@ OPTIONAL_ENV_VARS = {
     "MATTERMOST_FREE_RESPONSE_CHANNELS": {
         "description": "Comma-separated Mattermost channel IDs where bot responds without @mention",
         "prompt": "Free-response channel IDs (comma-separated)",
-        "url": None,
-        "password": False,
-        "category": "messaging",
-    },
-    "MATRIX_HOMESERVER": {
-        "description": "Matrix homeserver URL (e.g. https://matrix.example.org)",
-        "prompt": "Matrix homeserver URL",
-        "url": "https://matrix.org/ecosystem/servers/",
-        "password": False,
-        "category": "messaging",
-    },
-    "MATRIX_ACCESS_TOKEN": {
-        "description": "Matrix access token (preferred over password login)",
-        "prompt": "Matrix access token",
-        "url": None,
-        "password": True,
-        "category": "messaging",
-    },
-    "MATRIX_USER_ID": {
-        "description": "Matrix user ID (e.g. @hermes:example.org)",
-        "prompt": "Matrix user ID (@user:server)",
         "url": None,
         "password": False,
         "category": "messaging",
@@ -3629,13 +3515,6 @@ OPTIONAL_ENV_VARS = {
         "password": True,
         "category": "messaging",
         "advanced": True,
-    },
-    "BLUEBUBBLES_SERVER_URL": {
-        "description": "BlueBubbles server URL for iMessage integration (e.g. http://192.168.1.10:1234)",
-        "prompt": "BlueBubbles server URL",
-        "url": "https://bluebubbles.app/",
-        "password": False,
-        "category": "messaging",
     },
     "BLUEBUBBLES_PASSWORD": {
         "description": "BlueBubbles server password (from BlueBubbles Server → Settings → API)",
@@ -3857,7 +3736,6 @@ OPTIONAL_ENV_VARS = {
 # Tool Gateway env vars are always visible — they're useful for
 # self-hosted / custom gateway setups regardless of subscription state.
 
-
 def get_missing_env_vars(required_only: bool = False) -> List[Dict[str, Any]]:
     """
     Check which environment variables are missing.
@@ -3878,7 +3756,6 @@ def get_missing_env_vars(required_only: bool = False) -> List[Dict[str, Any]]:
                 missing.append({"name": var_name, **info, "is_required": False})
     
     return missing
-
 
 def _set_nested(config, dotted_key: str, value):
     """Set a value at an arbitrarily nested dotted key path.
@@ -3930,7 +3807,6 @@ def _set_nested(config, dotted_key: str, value):
     else:
         current[last] = value
 
-
 def clear_model_endpoint_credentials(
     model_cfg: Dict[str, Any],
     *,
@@ -3953,7 +3829,6 @@ def clear_model_endpoint_credentials(
     if clear_api_mode:
         model_cfg.pop("api_mode", None)
     return model_cfg
-
 
 def get_missing_config_fields() -> List[Dict[str, Any]]:
     """
@@ -3981,7 +3856,6 @@ def get_missing_config_fields() -> List[Dict[str, Any]]:
 
     _check(DEFAULT_CONFIG, config)
     return missing
-
 
 def get_missing_skill_config_vars() -> List[Dict[str, Any]]:
     """Return skill-declared config vars that are missing or empty in config.yaml.
@@ -4028,7 +3902,6 @@ def get_missing_skill_config_vars() -> List[Dict[str, Any]]:
         if value is None or (isinstance(value, str) and not value.strip()):
             missing.append(var)
     return missing
-
 
 def _normalize_custom_provider_entry(
     entry: Any,
@@ -4161,7 +4034,6 @@ def _normalize_custom_provider_entry(
 
     return normalized
 
-
 def _custom_provider_entry_to_provider_config(
     entry: Any,
     *,
@@ -4197,7 +4069,6 @@ def _custom_provider_entry_to_provider_config(
 
     return provider_entry
 
-
 def providers_dict_to_custom_providers(providers_dict: Any) -> List[Dict[str, Any]]:
     """Normalize ``providers`` config entries into the legacy custom-provider shape."""
     if not isinstance(providers_dict, dict):
@@ -4210,7 +4081,6 @@ def providers_dict_to_custom_providers(providers_dict: Any) -> List[Dict[str, An
             custom_providers.append(normalized)
 
     return custom_providers
-
 
 def get_compatible_custom_providers(
     config: Optional[Dict[str, Any]] = None,
@@ -4260,7 +4130,6 @@ def get_compatible_custom_providers(
         _append_if_new(entry)
 
     return compatible
-
 
 def get_custom_provider_context_length(
     model: str,
@@ -4326,7 +4195,6 @@ def get_custom_provider_context_length(
             return ctx
     return None
 
-
 def _coerce_config_version(value: Any) -> int:
     """Return a safe integer config version, treating invalid values as legacy."""
     if isinstance(value, bool):
@@ -4336,7 +4204,6 @@ def _coerce_config_version(value: Any) -> int:
     except (TypeError, ValueError):
         return 0
     return max(version, 0)
-
 
 def check_config_version() -> Tuple[int, int]:
     """
@@ -4369,7 +4236,6 @@ def check_config_version() -> Tuple[int, int]:
     current = _coerce_config_version(config.get("_config_version"))
     return current, latest
 
-
 # =============================================================================
 # Config structure validation
 # =============================================================================
@@ -4395,7 +4261,6 @@ _VALID_CUSTOM_PROVIDER_FIELDS = {
 # Fields that look like they should be inside custom_providers, not at root
 _CUSTOM_PROVIDER_LIKE_FIELDS = {"base_url", "api_key", "rate_limit_delay", "api_mode"}
 
-
 @dataclass
 class ConfigIssue:
     """A detected config structure problem."""
@@ -4403,7 +4268,6 @@ class ConfigIssue:
     severity: str  # "error", "warning"
     message: str
     hint: str
-
 
 def validate_config_structure(config: Optional[Dict[str, Any]] = None) -> List["ConfigIssue"]:
     """Validate config.yaml structure and return a list of detected issues.
@@ -4548,7 +4412,6 @@ def validate_config_structure(config: Optional[Dict[str, Any]] = None) -> List["
 
     return issues
 
-
 def print_config_warnings(config: Optional[Dict[str, Any]] = None) -> None:
     """Print config structure warnings to stderr at startup.
 
@@ -4569,7 +4432,6 @@ def print_config_warnings(config: Optional[Dict[str, Any]] = None) -> None:
         lines.append(f"  {marker} {ci.message}")
     lines.append("  \033[2mRun 'hermes doctor' for fix suggestions.\033[0m")
     sys.stderr.write("\n".join(lines) + "\n\n")
-
 
 def warn_deprecated_cwd_env_vars(config: Optional[Dict[str, Any]] = None) -> None:
     """Warn if MESSAGING_CWD or TERMINAL_CWD is set in .env instead of config.yaml.
@@ -4614,7 +4476,6 @@ def warn_deprecated_cwd_env_vars(config: Optional[Dict[str, Any]] = None) -> Non
             f"  \033[2mThen remove the old entries from {hint_path}/.env\033[0m"
         )
         sys.stderr.write("\n".join(lines) + "\n\n")
-
 
 def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, Any]:
     """
@@ -5294,7 +5155,6 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
 
     return results
 
-
 def _deep_merge(base: dict, override: dict) -> dict:
     """Recursively merge *override* into *base*, preserving nested defaults.
 
@@ -5313,7 +5173,6 @@ def _deep_merge(base: dict, override: dict) -> dict:
         else:
             result[key] = value
     return result
-
 
 def _strip_dotted_keys(cfg: dict, dotted_keys: set) -> Tuple[dict, set]:
     """Remove the given dotted leaf keys from a nested config dict.
@@ -5337,7 +5196,6 @@ def _strip_dotted_keys(cfg: dict, dotted_keys: set) -> Tuple[dict, set]:
             stripped.add(dotted)
     return cfg, stripped
 
-
 def _expand_env_vars(obj):
     """Recursively expand ``${VAR}`` references in config values.
 
@@ -5357,7 +5215,6 @@ def _expand_env_vars(obj):
         return [_expand_env_vars(item) for item in obj]
     return obj
 
-
 def _items_by_unique_name(items):
     """Return a name-indexed dict only when all items have unique string names."""
     if not isinstance(items, list):
@@ -5371,7 +5228,6 @@ def _items_by_unique_name(items):
             return None
         indexed[name] = item
     return indexed
-
 
 def _preserve_env_ref_templates(current, raw, loaded_expanded=None):
     """Restore raw ``${VAR}`` templates when a value is otherwise unchanged.
@@ -5436,7 +5292,6 @@ def _preserve_env_ref_templates(current, raw, loaded_expanded=None):
 
     return current
 
-
 def _normalize_root_model_keys(config: Dict[str, Any]) -> Dict[str, Any]:
     """Move stale root-level provider/base_url/context_length into model section.
 
@@ -5466,7 +5321,6 @@ def _normalize_root_model_keys(config: Dict[str, Any]) -> Dict[str, Any]:
 
     return config
 
-
 def _normalize_max_turns_config(config: Dict[str, Any]) -> Dict[str, Any]:
     """Normalize legacy root-level max_turns into agent.max_turns."""
     config = dict(config)
@@ -5481,7 +5335,6 @@ def _normalize_max_turns_config(config: Dict[str, Any]) -> Dict[str, Any]:
     config["agent"] = agent_config
     config.pop("max_turns", None)
     return config
-
 
 def cfg_get(cfg: Optional[Dict[str, Any]], *keys: str, default: Any = None) -> Any:
     """Traverse nested dict keys safely, returning ``default`` on any miss.
@@ -5528,8 +5381,6 @@ def cfg_get(cfg: Optional[Dict[str, Any]], *keys: str, default: Any = None) -> A
         node = node[key]
     return node
 
-
-
 def read_raw_config() -> Dict[str, Any]:
     """Read ~/.hermes/config.yaml as-is, without merging defaults or migrating.
 
@@ -5567,7 +5418,6 @@ def read_raw_config() -> Dict[str, Any]:
         _RAW_CONFIG_CACHE[path_key] = (cache_key[0], cache_key[1], copy.deepcopy(data))
         return data
 
-
 def load_config() -> Dict[str, Any]:
     """Load configuration from ~/.hermes/config.yaml.
 
@@ -5583,7 +5433,6 @@ def load_config() -> Dict[str, Any]:
     ``get_provider_request_timeout`` which is called once per API turn.
     """
     return _load_config_impl(want_deepcopy=True)
-
 
 def load_config_readonly() -> Dict[str, Any]:
     """Fast-path variant of ``load_config()`` for callers that ONLY READ.
@@ -5606,7 +5455,6 @@ def load_config_readonly() -> Dict[str, Any]:
     safety guarantee is purely documented, not enforced — be careful.
     """
     return _load_config_impl(want_deepcopy=False)
-
 
 TERMINAL_CONFIG_ENV_MAP = {
     "backend": "TERMINAL_ENV",
@@ -5638,12 +5486,10 @@ TERMINAL_CONFIG_ENV_MAP = {
     "persistent_shell": "TERMINAL_PERSISTENT_SHELL",
 }
 
-
 def _terminal_env_value(value: Any) -> str:
     if isinstance(value, (list, dict)):
         return json.dumps(value)
     return str(value)
-
 
 def terminal_config_env_var_for_key(key: str) -> Optional[str]:
     """Return the env var mirrored by a ``terminal.*`` config key."""
@@ -5651,7 +5497,6 @@ def terminal_config_env_var_for_key(key: str) -> Optional[str]:
     if not key.startswith(prefix):
         return None
     return TERMINAL_CONFIG_ENV_MAP.get(key[len(prefix):])
-
 
 def apply_terminal_config_to_env(
     *,
@@ -5694,7 +5539,6 @@ def apply_terminal_config_to_env(
         if should_override or env_var not in target:
             target[env_var] = _terminal_env_value(value)
     return target
-
 
 def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
     with _CONFIG_LOCK:
@@ -5791,7 +5635,6 @@ def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
         # file missing), it's also fine — callers get an isolated object.
         return expanded
 
-
 _SECURITY_COMMENT = """
 # ── Security ──────────────────────────────────────────────────────────
 # Secret redaction is ON by default — strings that look like API keys,
@@ -5834,7 +5677,6 @@ _FALLBACK_COMMENT = """
 #   model: anthropic/claude-sonnet-4
 """
 
-
 _COMMENTED_SECTIONS = """
 # ── Security ──────────────────────────────────────────────────────────
 # Secret redaction is ON by default. Set to false to pass tool output,
@@ -5865,7 +5707,6 @@ _COMMENTED_SECTIONS = """
 #   provider: openrouter
 #   model: anthropic/claude-sonnet-4
 """
-
 
 def save_config(config: Dict[str, Any]):
     """Save configuration to ~/.hermes/config.yaml."""
@@ -5926,7 +5767,6 @@ def save_config(config: Dict[str, Any]):
         _secure_file(config_path)
         _LAST_EXPANDED_CONFIG_BY_PATH[str(config_path)] = copy.deepcopy(current_normalized)
 
-
 def load_env() -> Dict[str, str]:
     """Load environment variables from ~/.hermes/.env.
 
@@ -5983,14 +5823,12 @@ def load_env() -> Dict[str, str]:
 
     return env_vars
 
-
 # Module-level memo for load_env(), keyed on (path, mtime, size).
 # Editing .env bumps mtime → next load_env() rebuilds. invalidate_env_cache()
 # is the explicit knob for writers that update .env via this module
 # (set_env_value, save_env, etc.) without relying on filesystem mtime
 # resolution.
 _env_cache: Optional[Tuple[Tuple[str, Optional[float], Optional[int]], Dict[str, str]]] = None
-
 
 def invalidate_env_cache() -> None:
     """Clear the load_env() process-level memo.
@@ -6002,7 +5840,6 @@ def invalidate_env_cache() -> None:
     """
     global _env_cache
     _env_cache = None
-
 
 def _sanitize_env_lines(lines: list) -> list:
     """Fix corrupted .env lines before reading or writing.
@@ -6063,7 +5900,6 @@ def _sanitize_env_lines(lines: list) -> list:
 
     return sanitized
 
-
 def sanitize_env_file() -> int:
     """Read, sanitize, and rewrite ~/.hermes/.env in place.
 
@@ -6109,7 +5945,6 @@ def sanitize_env_file() -> int:
     invalidate_env_cache()
     return fixes
 
-
 def _check_non_ascii_credential(key: str, value: str) -> str:
     """Warn and strip non-ASCII characters from credential values.
 
@@ -6148,7 +5983,6 @@ def _check_non_ascii_credential(key: str, value: str) -> str:
         file=sys.stderr,
     )
     return sanitized
-
 
 def save_env_value(key: str, value: str):
     """Save or update a value in ~/.hermes/.env."""
@@ -6236,7 +6070,6 @@ def save_env_value(key: str, value: str):
     os.environ[key] = value
     invalidate_env_cache()
 
-
 def remove_env_value(key: str) -> bool:
     """Remove a key from ~/.hermes/.env and os.environ.
 
@@ -6309,13 +6142,11 @@ def remove_env_value(key: str) -> bool:
     invalidate_env_cache()
     return found
 
-
 def save_anthropic_oauth_token(value: str, save_fn=None):
     """Persist an Anthropic OAuth/setup token and clear the API-key slot."""
     writer = save_fn or save_env_value
     writer("ANTHROPIC_TOKEN", value)
     writer("ANTHROPIC_API_KEY", "")
-
 
 def use_anthropic_claude_code_credentials(save_fn=None):
     """Use Claude Code's own credential files instead of persisting env tokens."""
@@ -6323,13 +6154,11 @@ def use_anthropic_claude_code_credentials(save_fn=None):
     writer("ANTHROPIC_TOKEN", "")
     writer("ANTHROPIC_API_KEY", "")
 
-
 def save_anthropic_api_key(value: str, save_fn=None):
     """Persist an Anthropic API key and clear the OAuth/setup-token slot."""
     writer = save_fn or save_env_value
     writer("ANTHROPIC_API_KEY", value)
     writer("ANTHROPIC_TOKEN", "")
-
 
 def save_env_value_secure(key: str, value: str) -> Dict[str, Any]:
     save_env_value(key, value)
@@ -6338,8 +6167,6 @@ def save_env_value_secure(key: str, value: str) -> Dict[str, Any]:
         "stored_as": key,
         "validated": False,
     }
-
-
 
 def reload_env() -> int:
     """Re-read ~/.hermes/.env into os.environ. Returns count of vars updated.
@@ -6362,7 +6189,6 @@ def reload_env() -> int:
             count += 1
     return count
 
-
 def get_env_value(key: str) -> Optional[str]:
     """Get a value from ~/.hermes/.env or environment."""
     # Check environment first
@@ -6372,7 +6198,6 @@ def get_env_value(key: str) -> Optional[str]:
     # Then check .env file
     env_vars = load_env()
     return env_vars.get(key)
-
 
 # =============================================================================
 # Config display
@@ -6386,7 +6211,6 @@ def redact_key(key: str) -> str:
     """
     from agent.redact import mask_secret
     return mask_secret(key, empty=color("(not set)", Colors.DIM))
-
 
 def show_config():
     """Display current configuration."""
@@ -6594,7 +6418,6 @@ def show_config():
     print(color("  hermes setup           # Run setup wizard", Colors.DIM))
     print()
 
-
 def edit_config():
     """Open config file in user's editor."""
     if is_managed():
@@ -6633,7 +6456,6 @@ def edit_config():
     
     print(f"Opening {config_path} in {editor}...")
     subprocess.run([editor, str(config_path)])
-
 
 def set_config_value(key: str, value: str):
     """Set a configuration value."""
@@ -6715,7 +6537,6 @@ def set_config_value(key: str, value: str):
         save_env_value(env_var, _terminal_env_value(value))
 
     print(f"✓ Set {key} = {value} in {config_path}")
-
 
 # =============================================================================
 # Command handler
@@ -6857,14 +6678,12 @@ def config_command(args):
         print("  hermes config env-path  Show .env file path")
         sys.exit(1)
 
-
 # ── Profile-driven env var injection ─────────────────────────────────────────
 # Any provider registered in providers/ with auth_type="api_key" automatically
 # gets its env_vars exposed in OPTIONAL_ENV_VARS without editing this file.
 # Runs once at import time.
 
 _profile_env_vars_injected = False
-
 
 def _inject_profile_env_vars() -> None:
     """Populate OPTIONAL_ENV_VARS from provider profiles not already listed.
@@ -6895,10 +6714,8 @@ def _inject_profile_env_vars() -> None:
     except Exception:
         pass
 
-
 # Eagerly inject so that OPTIONAL_ENV_VARS is fully populated at import time.
 _inject_profile_env_vars()
-
 
 # ── Platform-plugin env var injection ────────────────────────────────────────
 # Bundled platform plugins under ``plugins/platforms/*/plugin.yaml`` declare
@@ -6921,7 +6738,6 @@ _inject_profile_env_vars()
 # (e.g. allowlist, home channel).
 
 _platform_plugin_env_vars_injected = False
-
 
 def _inject_platform_plugin_env_vars() -> None:
     """Populate OPTIONAL_ENV_VARS from bundled platform plugin manifests.
@@ -6991,7 +6807,6 @@ def _inject_platform_plugin_env_vars() -> None:
                 }
     except Exception:
         pass
-
 
 # Eagerly inject so that platform plugin env vars show up in the setup wizard.
 _inject_platform_plugin_env_vars()

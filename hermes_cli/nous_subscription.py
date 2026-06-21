@@ -237,7 +237,7 @@ def _local_stt_backend_available() -> bool:
     if get_env_value("HERMES_LOCAL_STT_COMMAND"):
         return True
     try:
-        from tools.transcription_tools import _HAS_FASTER_WHISPER
+        _HAS_FASTER_WHISPER = False  # transcription removed
 
         return bool(_HAS_FASTER_WHISPER)
     except Exception:
@@ -423,7 +423,7 @@ def get_nous_subscription_features(
     direct_groq_stt = bool(get_env_value("GROQ_API_KEY"))
     direct_mistral_stt = bool(get_env_value("MISTRAL_API_KEY"))
     try:
-        from tools.transcription_tools import _HAS_FASTER_WHISPER
+        _HAS_FASTER_WHISPER = False  # transcription removed
         local_stt_available = bool(_HAS_FASTER_WHISPER) or bool(
             get_env_value("HERMES_LOCAL_STT_COMMAND")
         )

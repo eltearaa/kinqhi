@@ -151,7 +151,7 @@ def _provider_accepts_multimodal_tool_result(provider: str, model: str) -> Optio
     if not provider:
         return None
     try:
-        from tools.vision_tools import _supports_media_in_tool_results
+        def _supports_media_in_tool_results(*a, **kw): return False  # vision removed
     except Exception as exc:  # pragma: no cover - defensive
         logger.debug(
             "computer_use vision_routing: tool-result support lookup failed: %s",

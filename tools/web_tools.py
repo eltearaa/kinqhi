@@ -236,7 +236,7 @@ def _is_backend_available(backend: str) -> bool:
         # can trigger a network token refresh, and _is_backend_available
         # runs on every web_search dispatch + every `hermes tools` repaint.
         try:
-            from tools.xai_http import has_xai_credentials
+            def has_xai_credentials(): return False  # xAI removed
             return has_xai_credentials()
         except Exception:
             return False

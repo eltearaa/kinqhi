@@ -2650,7 +2650,7 @@ async def transcribe_audio_upload(payload: AudioTranscriptionRequest):
             tmp.write(audio_bytes)
             temp_path = tmp.name
 
-        from tools.transcription_tools import transcribe_audio
+        transcribe_audio = None  # transcription removed
 
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(None, transcribe_audio, temp_path)
@@ -2754,7 +2754,7 @@ async def speak_text(payload: TTSSpeakRequest):
         raise HTTPException(status_code=400, detail="Text is required")
 
     try:
-        from tools.tts_tool import text_to_speech_tool
+        text_to_speech_tool = None  # TTS removed
         loop = asyncio.get_running_loop()
         result_json = await loop.run_in_executor(None, text_to_speech_tool, text)
     except Exception as exc:

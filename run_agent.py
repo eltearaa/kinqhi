@@ -4394,7 +4394,7 @@ class AIAgent:
 
         description = ""
         try:
-            from tools.vision_tools import vision_analyze_tool
+            vision_analyze_tool = None  # vision tools removed in lean distribution
 
             result_json = asyncio.run(
                 vision_analyze_tool(image_url=vision_source, user_prompt=analysis_prompt)

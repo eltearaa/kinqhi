@@ -343,7 +343,7 @@ def cmd_send(args: argparse.Namespace) -> None:
 
     # Import lazily so `hermes send --help` stays fast and does not pull in
     # the full tool registry / gateway config stack.
-    from tools.send_message_tool import send_message_tool
+    send_message_tool = None  # send_message removed
 
     # send_message_tool auto-loads gateway config + env and routes to the
     # appropriate platform adapter (bot-token path for Telegram/Discord/Slack/

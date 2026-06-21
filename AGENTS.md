@@ -7,11 +7,16 @@ Instructions for AI coding assistants and developers working on the hermes-agent
 ## What Hermes Is
 
 Hermes is a personal AI agent that runs the same agent core across a CLI, a
-messaging gateway (Telegram, Discord, Slack, and ~20 other platforms), a TUI,
-and an Electron desktop app. It learns across sessions (memory + skills),
-delegates to subagents, runs scheduled jobs, and drives a real terminal and
-browser. It is extended primarily through **plugins and skills**, not by
-growing the core.
+messaging gateway (Discord + API server), a TUI, and IDE integration (Zed via ACP).
+It learns across sessions (memory + skills), delegates to subagents, runs scheduled
+jobs, and drives a real terminal and browser. It is extended primarily through
+**plugins and skills**, not by growing the core.
+
+This is a lean distribution — ~50% of the original codebase removed. Platform
+adapters (Telegram, Slack, WhatsApp, etc.), vision tools, TTS/STT, image/video
+generation, dashboard, desktop app, and 23 model providers have been stripped.
+What remains: core agent, Discord, API server, 6 model providers, holographic
+memory, 7 plugins, and ~66 curated skills.
 
 Two properties shape almost every design decision and are the lens for
 reviewing any change:
@@ -218,44 +223,39 @@ entry points you'll actually edit.
 
 ```
 hermes-agent/
-├── run_agent.py          # AIAgent class — core conversation loop (~12k LOC)
+├── run_agent.py          # AIAgent class — core conversation loop
 ├── model_tools.py        # Tool orchestration, discover_builtin_tools(), handle_function_call()
 ├── toolsets.py           # Toolset definitions, _HERMES_CORE_TOOLS list
-├── cli.py                # HermesCLI class — interactive CLI orchestrator (~11k LOC)
+├── cli.py                # HermesCLI class — interactive CLI orchestrator
 ├── hermes_state.py       # SessionDB — SQLite session store (FTS5 search)
 ├── hermes_constants.py   # get_hermes_home(), display_hermes_home() — profile-aware paths
 ├── hermes_logging.py     # setup_logging() — agent.log / errors.log / gateway.log (profile-aware)
-├── batch_runner.py       # Parallel batch processing
 ├── agent/                # Agent internals (provider adapters, memory, caching, compression, etc.)
 ├── hermes_cli/           # CLI subcommands, setup wizard, plugins loader, skin engine
 ├── tools/                # Tool implementations — auto-discovered via tools/registry.py
-│   └── environments/     # Terminal backends (local, docker, ssh, modal, daytona, singularity)
+│   └── environments/     # Terminal backends (local, docker, ssh)
 ├── gateway/              # Messaging gateway — run.py + session.py + platforms/
-│   ├── platforms/        # Adapter per platform (telegram, discord, slack, whatsapp,
-│   │                     #   homeassistant, signal, matrix, mattermost, email, sms,
-│   │                     #   dingtalk, wecom, weixin, feishu, qqbot, bluebubbles,
-│   │                     #   yuanbao, webhook, api_server, ...). See ADDING_A_PLATFORM.md.
-│   └── builtin_hooks/    # Extension point for always-registered gateway hooks (none shipped)
-├── plugins/              # Plugin system (see "Plugins" section below)
-│   ├── memory/           # Memory-provider plugins (honcho, mem0, supermemory, ...)
-│   ├── context_engine/   # Context-engine plugins
-│   ├── model-providers/  # Inference backend plugins (openrouter, anthropic, gmi, ...)
-│   ├── kanban/           # Multi-agent board dispatcher + worker plugin
-│   ├── hermes-achievements/  # Gamified achievement tracking
-│   ├── observability/    # Metrics / traces / logs plugin
-│   ├── image_gen/        # Image-generation providers
-│   └── <others>/         # disk-cleanup, google_meet, platforms, spotify,
-│                         #   strike-freedom-cockpit, ...
-├── optional-skills/      # Heavier/niche skills shipped but NOT active by default
-├── skills/               # Built-in skills bundled with the repo
+│   └── platforms/        # API server adapter. Discord adapter lives in plugins/platforms/
+├── plugins/              # Plugin system
+│   ├── memory/           # Memory-provider: holographic (SQLite, zero deps)
+│   ├── model-providers/  # 6 providers: deepseek, openrouter, anthropic, openai-codex, custom, ollama-cloud
+│   ├── context_engine/   # Context compression plugins
+│   ├── web/              # Web search: ddgs (DuckDuckGo, free)
+│   ├── platforms/        # Discord adapter
+│   ├── security-guidance/ # Code safety pattern warnings
+│   ├── disk-cleanup/     # Auto-cleanup temp files
+│   ├── spotify/          # Spotify playback control
+│   └── google_meet/      # Google Meet transcription
+├── skills/               # ~43 built-in skills (curated)
+├── optional-skills/      # ~23 optional skills (curated)
 ├── ui-tui/               # Ink (React) terminal UI — `hermes --tui`
-│   └── src/              # entry.tsx, app.tsx, gatewayClient.ts + app/components/hooks/lib
 ├── tui_gateway/          # Python JSON-RPC backend for the TUI
-├── acp_adapter/          # ACP server (VS Code / Zed / JetBrains integration)
+├── acp_adapter/          # ACP server (Zed integration)
+├── acp_registry/         # ACP discovery manifest
 ├── cron/                 # Scheduler — jobs.py, scheduler.py
-├── scripts/              # run_tests.sh, release.py, auxiliary scripts
-├── website/              # Docusaurus docs site
-└── tests/                # Pytest suite (~17k tests across ~900 files as of May 2026)
+├── providers/            # Provider framework (ABC + discovery)
+├── scripts/              # run_tests.sh + auxiliary scripts
+└── tests/                # Pytest suite
 ```
 
 **User config:** `~/.hermes/config.yaml` (settings), `~/.hermes/.env` (API keys only).
@@ -940,10 +940,9 @@ Each platform's adapter picks a base toolset (e.g. Telegram uses
 platforms inherit from.
 
 Current toolset keys: `browser`, `clarify`, `code_execution`, `cronjob`,
-`debugging`, `delegation`, `discord`, `discord_admin`, `feishu_doc`,
-`feishu_drive`, `file`, `homeassistant`, `image_gen`, `kanban`, `memory`,
-`messaging`, `moa`, `rl`, `safe`, `search`, `session_search`, `skills`,
-`spotify`, `terminal`, `todo`, `tts`, `video`, `vision`, `web`, `yuanbao`.
+`debugging`, `delegation`, `file`, `kanban`, `memory`,
+`messaging`, `safe`, `search`, `session_search`, `skills`,
+`spotify`, `terminal`, `todo`, `web`.
 
 Enable/disable per platform via `hermes tools` (the curses UI) or the
 `tools.<platform>.enabled` / `tools.<platform>.disabled` lists in
