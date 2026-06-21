@@ -30,7 +30,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import plugins.dashboard_auth.self_hosted as oidc_plugin
-from hermes_cli.dashboard_auth import (
+from kinqhi_cli.dashboard_auth import (
     InvalidCodeError,
     LoginStart,
     ProviderError,
@@ -752,9 +752,9 @@ class TestPluginRegister:
     @pytest.fixture(autouse=True)
     def clear_env(self, monkeypatch):
         for var in (
-            "HERMES_DASHBOARD_OIDC_ISSUER",
-            "HERMES_DASHBOARD_OIDC_CLIENT_ID",
-            "HERMES_DASHBOARD_OIDC_SCOPES",
+            "KINQHI_DASHBOARD_OIDC_ISSUER",
+            "KINQHI_DASHBOARD_OIDC_CLIENT_ID",
+            "KINQHI_DASHBOARD_OIDC_SCOPES",
         ):
             monkeypatch.delenv(var, raising=False)
 
@@ -764,7 +764,7 @@ class TestPluginRegister:
             cfg = {}
             if oauth_block is not None:
                 cfg = {"dashboard": {"oauth": oauth_block}}
-            monkeypatch.setattr("hermes_cli.config.load_config", lambda: cfg)
+            monkeypatch.setattr("kinqhi_cli.config.load_config", lambda: cfg)
 
         return _set
 
@@ -773,20 +773,20 @@ class TestPluginRegister:
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_not_called()
-        assert "HERMES_DASHBOARD_OIDC_ISSUER" in oidc_plugin.LAST_SKIP_REASON
+        assert "KINQHI_DASHBOARD_OIDC_ISSUER" in oidc_plugin.LAST_SKIP_REASON
         assert "self_hosted" in oidc_plugin.LAST_SKIP_REASON
 
     def test_skips_when_only_issuer_set(self, patch_config, monkeypatch):
         patch_config(None)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("KINQHI_DASHBOARD_OIDC_ISSUER", _ISSUER)
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_not_called()
 
     def test_registers_from_env(self, patch_config, monkeypatch):
         patch_config(None)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_ISSUER", _ISSUER)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("KINQHI_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("KINQHI_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_called_once()
@@ -817,8 +817,8 @@ class TestPluginRegister:
                 }
             }
         )
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_ISSUER", _ISSUER)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("KINQHI_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("KINQHI_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -829,8 +829,8 @@ class TestPluginRegister:
         patch_config(
             {"self_hosted": {"issuer": _ISSUER, "client_id": _CLIENT_ID}}
         )
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_ISSUER", "")
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_ID", "")
+        monkeypatch.setenv("KINQHI_DASHBOARD_OIDC_ISSUER", "")
+        monkeypatch.setenv("KINQHI_DASHBOARD_OIDC_CLIENT_ID", "")
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_called_once()
@@ -856,14 +856,14 @@ class TestPluginRegister:
         def _broken():
             raise OSError("unreadable")
 
-        monkeypatch.setattr("hermes_cli.config.load_config", _broken)
+        monkeypatch.setattr("kinqhi_cli.config.load_config", _broken)
         ctx = MagicMock()
         oidc_plugin.register(ctx)  # must not raise
         ctx.register_dashboard_auth_provider.assert_not_called()
 
     def test_non_dict_oauth_section_tolerated(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.config.load_config",
+            "kinqhi_cli.config.load_config",
             lambda: {"dashboard": {"oauth": "wrong type"}},
         )
         ctx = MagicMock()
@@ -873,9 +873,9 @@ class TestPluginRegister:
     def test_non_https_issuer_skips_with_reason(self, patch_config, monkeypatch):
         patch_config(None)
         monkeypatch.setenv(
-            "HERMES_DASHBOARD_OIDC_ISSUER", "http://insecure.example"
+            "KINQHI_DASHBOARD_OIDC_ISSUER", "http://insecure.example"
         )
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("KINQHI_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_not_called()

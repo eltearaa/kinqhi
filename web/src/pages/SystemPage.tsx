@@ -209,7 +209,7 @@ export default function SystemPage() {
       api.getPortal(),
       // Cached (non-forced) check so the version row shows update status on
       // load without a separate effect / a forced network round-trip.
-      api.checkHermesUpdate(false),
+      api.checkKinqhiUpdate(false),
     ])
       .then(([s, st, m, p, c, h, cur, prt, upd]) => {
         if (s.status === "fulfilled") setStatus(s.value);
@@ -389,7 +389,7 @@ export default function SystemPage() {
       if (status?.can_update_hermes === false) return;
       setCheckingUpdate(true);
       try {
-        const info = await api.checkHermesUpdate(force);
+        const info = await api.checkKinqhiUpdate(force);
         setUpdateInfo(info);
         if (force) {
           if (info.update_available) {
@@ -420,13 +420,13 @@ export default function SystemPage() {
     setUpdateConfirmOpen(false);
     if (status?.can_update_hermes === false) {
       showToast(
-        "Hermes updates are managed outside this dashboard.",
+        "Kinqhi updates are managed outside this dashboard.",
         "success",
       );
       return;
     }
     try {
-      const resp = await api.updateHermes();
+      const resp = await api.updateKinqhi();
       if (!resp.ok) {
         showToast(
           resp.message ??
@@ -511,7 +511,7 @@ export default function SystemPage() {
   }
 
   const gatewayRunning = status?.gateway_running;
-  const canUpdateHermes = status?.can_update_hermes !== false;
+  const canUpdateKinqhi = status?.can_update_hermes !== false;
   const validEvents = hooks?.valid_events?.length
     ? hooks.valid_events
     : HOOK_EVENTS_FALLBACK;
@@ -521,14 +521,14 @@ export default function SystemPage() {
       <Toast toast={toast} />
 
       <ConfirmDialog
-        open={canUpdateHermes && updateConfirmOpen}
+        open={canUpdateKinqhi && updateConfirmOpen}
         onCancel={() => setUpdateConfirmOpen(false)}
         onConfirm={() => void applyUpdate()}
-        title="Update Hermes?"
+        title="Update Kinqhi?"
         description={
           updateInfo && updateInfo.behind && updateInfo.behind > 0
-            ? `This will run 'hermes update' (${updateInfo.update_command}) and pull ${updateInfo.behind} new commit${updateInfo.behind === 1 ? "" : "s"}. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.`
-            : `This will run 'hermes update' (${updateInfo?.update_command ?? "hermes update"}) and restart the gateway when it finishes.`
+            ? `This will run 'kinqhi update' (${updateInfo.update_command}) and pull ${updateInfo.behind} new commit${updateInfo.behind === 1 ? "" : "s"}. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.`
+            : `This will run 'kinqhi update' (${updateInfo?.update_command ?? "kinqhi update"}) and restart the gateway when it finishes.`
         }
         confirmLabel="Update now"
       />
@@ -697,10 +697,10 @@ export default function SystemPage() {
                 <div>{stats?.python_impl} {stats?.python_version}</div>
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">Hermes</div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Kinqhi</div>
                 <div className="flex items-center gap-2">
                   <span>v{stats?.hermes_version}</span>
-                  {canUpdateHermes &&
+                  {canUpdateKinqhi &&
                     updateInfo &&
                     (updateInfo.update_available ? (
                       <Badge tone="warning">
@@ -761,7 +761,7 @@ export default function SystemPage() {
                 CPU / memory / disk metrics.
               </p>
             )}
-            {canUpdateHermes && (
+            {canUpdateKinqhi && (
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
                 <Button
                   size="sm"
@@ -846,7 +846,7 @@ export default function SystemPage() {
             )}
             {!portal?.logged_in && (
               <p className="text-xs text-muted-foreground">
-                Log in with <span className="font-mono">hermes portal</span>.
+                Log in with <span className="font-mono">kinqhi portal</span>.
               </p>
             )}
           </CardContent>
@@ -954,7 +954,7 @@ export default function SystemPage() {
               </Link>
               <span className="ml-auto">
                 New credentials:{" "}
-                <span className="font-mono">hermes memory setup</span>
+                <span className="font-mono">kinqhi memory setup</span>
               </span>
             </div>
 
@@ -1076,7 +1076,7 @@ export default function SystemPage() {
                   <span className="text-sm font-medium">Share debug report</span>
                   <span className="text-xs text-muted-foreground max-w-prose">
                     Uploads system info + logs to a public paste service and
-                    returns links to send the Hermes team. Pastes auto-delete
+                    returns links to send the Kinqhi team. Pastes auto-delete
                     after 6 hours.
                   </span>
                 </div>
@@ -1206,7 +1206,7 @@ export default function SystemPage() {
             <ConfirmDialog
               open={importConfirmOpen}
               title="Restore from backup?"
-              description={`This will overwrite your current Hermes configuration, skills, sessions, and data with the contents of ${importPath.trim() || "the archive"}. This cannot be undone.`}
+              description={`This will overwrite your current Kinqhi configuration, skills, sessions, and data with the contents of ${importPath.trim() || "the archive"}. This cannot be undone.`}
               destructive
               confirmLabel="Restore"
               cancelLabel="Cancel"

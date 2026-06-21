@@ -24,7 +24,7 @@ def sample_repo(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init")
-    _git(repo, "config", "user.name", "Hermes Tests")
+    _git(repo, "config", "user.name", "Kinqhi Tests")
     _git(repo, "config", "user.email", "tests@example.com")
 
     (repo / "src").mkdir()
@@ -332,7 +332,7 @@ async def test_blocks_sensitive_home_and_hermes_paths(tmp_path: Path, monkeypatc
     from agent.context_references import preprocess_context_references_async
 
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("KINQHI_HOME", str(tmp_path / ".hermes"))
 
     hermes_env = tmp_path / ".hermes" / ".env"
     hermes_env.parent.mkdir(parents=True)

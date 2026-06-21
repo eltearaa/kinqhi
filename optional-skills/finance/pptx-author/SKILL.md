@@ -6,7 +6,7 @@ author: Anthropic (adapted by Nous Research)
 license: Apache-2.0
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  kinqhi:
     tags: [powerpoint, pptx, python-pptx, presentation, finance]
     related_skills: [excel-author, powerpoint]
 ---

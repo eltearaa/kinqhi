@@ -19,18 +19,18 @@ import pytest
 
 @pytest.fixture
 def hermes_env(tmp_path, monkeypatch):
-    """Isolate HERMES_HOME for each test so jobs/scripts don't leak."""
+    """Isolate KINQHI_HOME for each test so jobs/scripts don't leak."""
     home = tmp_path / ".hermes"
     home.mkdir()
     (home / "scripts").mkdir()
     (home / "cron").mkdir()
 
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("KINQHI_HOME", str(home))
 
-    # Reload modules that cache get_hermes_home() at import time.
+    # Reload modules that cache get_kinqhi_home() at import time.
     import importlib
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    import kinqhi_constants
+    importlib.reload(kinqhi_constants)
     import cron.jobs
     importlib.reload(cron.jobs)
     import cron.scheduler

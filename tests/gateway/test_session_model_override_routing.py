@@ -184,11 +184,11 @@ fallback_providers:
 """.lstrip(),
         encoding="utf-8",
     )
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_kinqhi_home", tmp_path)
 
     def fake_resolve_runtime_provider(*, requested=None, explicit_base_url=None, explicit_api_key=None):
         if requested in {None, "", "openai-codex"}:
-            from hermes_cli.auth import AuthError
+            from kinqhi_cli.auth import AuthError
             raise AuthError("No Codex credentials stored. Run `hermes auth` to authenticate.")
         assert requested == "openrouter"
         return {
@@ -201,7 +201,7 @@ fallback_providers:
             "credential_pool": None,
         }
 
-    import hermes_cli.runtime_provider as runtime_provider
+    import kinqhi_cli.runtime_provider as runtime_provider
 
     monkeypatch.setattr(runtime_provider, "resolve_runtime_provider", fake_resolve_runtime_provider)
 
@@ -232,7 +232,7 @@ fallback_providers:
 """.lstrip(),
         encoding="utf-8",
     )
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_kinqhi_home", tmp_path)
     monkeypatch.setenv("MY_FALLBACK_KEY", "env-secret")
 
     def fake_resolve_runtime_provider(*, requested=None, explicit_base_url=None, explicit_api_key=None):
@@ -249,7 +249,7 @@ fallback_providers:
             "credential_pool": None,
         }
 
-    import hermes_cli.runtime_provider as runtime_provider
+    import kinqhi_cli.runtime_provider as runtime_provider
 
     monkeypatch.setattr(runtime_provider, "resolve_runtime_provider", fake_resolve_runtime_provider)
 

@@ -1,4 +1,4 @@
-"""Comprehensive tests for hermes_cli.profiles module.
+"""Comprehensive tests for kinqhi_cli.profiles module.
 
 Tests cover: validation, directory resolution, CRUD operations, active profile
 management, export/import, renaming, alias collision checks, profile isolation,
@@ -14,7 +14,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 import yaml
 
-from hermes_cli.profiles import (
+from kinqhi_cli.profiles import (
     normalize_profile_name,
     validate_profile_name,
     get_profile_dir,
@@ -30,18 +30,18 @@ from hermes_cli.profiles import (
     export_profile,
     import_profile,
     _get_profiles_root,
-    _get_default_hermes_home,
+    _get_default_kinqhi_home,
     seed_profile_skills,
     has_bundled_skills_opt_out,
     NO_BUNDLED_SKILLS_MARKER,
     backfill_profile_envs,
     profiles_to_serve,
 )
-from hermes_cli.config import DEFAULT_CONFIG
+from kinqhi_cli.config import DEFAULT_CONFIG
 
 
 # ---------------------------------------------------------------------------
-# Shared fixture: redirect Path.home() and HERMES_HOME for profile tests
+# Shared fixture: redirect Path.home() and KINQHI_HOME for profile tests
 # ---------------------------------------------------------------------------
 
 @pytest.fixture()
@@ -49,13 +49,13 @@ def profile_env(tmp_path, monkeypatch):
     """Set up an isolated environment for profile tests.
 
     * Path.home() -> tmp_path  (so _get_profiles_root() = tmp_path/.hermes/profiles)
-    * HERMES_HOME  -> tmp_path/.hermes  (so get_hermes_home() agrees)
-    * Creates the bare-minimum ~/.hermes directory.
+    * KINQHI_HOME  -> tmp_path/.hermes  (so get_kinqhi_home() agrees)
+    * Creates the bare-minimum ~/.kinqhi directory.
     """
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     default_home = tmp_path / ".hermes"
     default_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("KINQHI_HOME", str(default_home))
     return tmp_path
 
 
@@ -119,7 +119,7 @@ class TestValidateProfileName:
 
     @pytest.mark.parametrize("name", ["hermes", "test", "tmp", "root", "sudo"])
     def test_reserved_names_rejected(self, name):
-        """Reserved names collide with the Hermes install itself or with
+        """Reserved names collide with the Kinqhi install itself or with
         common system binaries — reject them at validate time so
         create/install/rename all share one gate."""
         with pytest.raises(ValueError, match="reserved"):
@@ -133,7 +133,7 @@ class TestValidateProfileName:
 class TestGetProfileDir:
     """Tests for get_profile_dir()."""
 
-    def test_default_returns_hermes_home(self, profile_env):
+    def test_default_returns_kinqhi_home(self, profile_env):
         tmp_path = profile_env
         result = get_profile_dir("default")
         assert result == tmp_path / ".hermes"
@@ -269,7 +269,7 @@ class TestCreateProfile:
         assert not (profile_dir / "processes.json").exists()
 
     def test_clone_all_excludes_sibling_profiles_tree(self, profile_env):
-        """--clone-all from default ~/.hermes must not copy profiles/* (nested explosion)."""
+        """--clone-all from default ~/.kinqhi must not copy profiles/* (nested explosion)."""
         tmp_path = profile_env
         default_home = tmp_path / ".hermes"
         profiles_root = default_home / "profiles"
@@ -286,7 +286,7 @@ class TestCreateProfile:
         assert not (profile_dir / "profiles").exists()
 
     def test_clone_all_excludes_default_infrastructure(self, profile_env):
-        """--clone-all from default profile excludes hermes-agent, .worktrees,
+        """--clone-all from default profile excludes kinqhi, .worktrees,
         bin, node_modules at root, plus __pycache__/*.pyc/*.pyo/*.sock/*.tmp
         at any depth.  Profile data (config, env, skills, logs) must be
         preserved — clone-all means "complete snapshot minus infrastructure
@@ -295,9 +295,9 @@ class TestCreateProfile:
         tmp_path = profile_env
         default_home = tmp_path / ".hermes"
         # Simulate infrastructure dirs that only the default profile has
-        (default_home / "hermes-agent" / ".git").mkdir(parents=True)
-        (default_home / "hermes-agent" / "venv" / "bin").mkdir(parents=True)
-        (default_home / "hermes-agent" / "README.md").write_text("repo")
+        (default_home / "kinqhi" / ".git").mkdir(parents=True)
+        (default_home / "kinqhi" / "venv" / "bin").mkdir(parents=True)
+        (default_home / "kinqhi" / "README.md").write_text("repo")
         (default_home / ".worktrees" / "some-tree").mkdir(parents=True)
         (default_home / "profiles" / "other").mkdir(parents=True)
         (default_home / "profiles" / "other" / "config.yaml").write_text("x")
@@ -322,7 +322,7 @@ class TestCreateProfile:
         profile_dir = create_profile("cloned", clone_all=True, no_alias=True)
 
         # Infrastructure must be excluded
-        assert not (profile_dir / "hermes-agent").exists()
+        assert not (profile_dir / "kinqhi").exists()
         assert not (profile_dir / ".worktrees").exists()
         assert not (profile_dir / "profiles").exists()
         assert not (profile_dir / "bin").exists()
@@ -426,7 +426,7 @@ class TestNoSkillsOptOut:
 
     def test_seed_profile_skills_respects_marker(self, profile_env):
         """seed_profile_skills() must no-op on opted-out profiles even when
-        called directly (e.g. by `hermes update`'s all-profile sync loop)."""
+        called directly (e.g. by `kinqhi update`'s all-profile sync loop)."""
         profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
 
         # Call seed_profile_skills() directly — it should NOT invoke subprocess,
@@ -498,7 +498,7 @@ class TestNoSkillsOptOut:
 # ===================================================================
 
 class TestBackfillProfileEnvs:
-    """Tests for backfill_profile_envs() — the `hermes update` pass that
+    """Tests for backfill_profile_envs() — the `kinqhi update` pass that
     gives pre-#44792 profiles (created before .env seeding) their own
     .env, copied from the default install so credentials don't break."""
 
@@ -558,7 +558,7 @@ class TestDeleteProfile:
         profile_dir = create_profile("coder", no_alias=True)
         assert profile_dir.is_dir()
         # Mock gateway import to avoid real systemd/launchd interaction
-        with patch("hermes_cli.profiles._cleanup_gateway_service"):
+        with patch("kinqhi_cli.profiles._cleanup_gateway_service"):
             delete_profile("coder", yes=True)
         assert not profile_dir.is_dir()
 
@@ -574,8 +574,8 @@ class TestDeleteProfile:
         profile_dir = create_profile("coder", no_alias=True)
         set_active_profile("coder")
 
-        with patch("hermes_cli.profiles._cleanup_gateway_service"), \
-             patch("hermes_cli.profiles.shutil.rmtree", side_effect=PermissionError("locked")):
+        with patch("kinqhi_cli.profiles._cleanup_gateway_service"), \
+             patch("kinqhi_cli.profiles.shutil.rmtree", side_effect=PermissionError("locked")):
             with pytest.raises(RuntimeError, match="Could not remove profile directory"):
                 delete_profile("coder", yes=True)
 
@@ -661,24 +661,24 @@ class TestActiveProfile:
 class TestGetActiveProfileName:
     """Tests for get_active_profile_name()."""
 
-    def test_default_hermes_home_returns_default(self, profile_env):
-        # HERMES_HOME points to tmp_path/.hermes which is the default
+    def test_default_kinqhi_home_returns_default(self, profile_env):
+        # KINQHI_HOME points to tmp_path/.hermes which is the default
         assert get_active_profile_name() == "default"
 
     def test_profile_path_returns_profile_name(self, profile_env, monkeypatch):
         tmp_path = profile_env
         create_profile("coder", no_alias=True)
         profile_dir = tmp_path / ".hermes" / "profiles" / "coder"
-        monkeypatch.setenv("HERMES_HOME", str(profile_dir))
+        monkeypatch.setenv("KINQHI_HOME", str(profile_dir))
         assert get_active_profile_name() == "coder"
 
     def test_custom_path_returns_default(self, profile_env, monkeypatch):
-        """A custom HERMES_HOME (Docker, etc.) IS the default root."""
+        """A custom KINQHI_HOME (Docker, etc.) IS the default root."""
         tmp_path = profile_env
         custom = tmp_path / "some" / "other" / "path"
         custom.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(custom))
-        # With Docker-aware roots, a custom HERMES_HOME is the default —
+        monkeypatch.setenv("KINQHI_HOME", str(custom))
+        # With Docker-aware roots, a custom KINQHI_HOME is the default —
         # not "custom".  The user is on the default profile of their
         # custom deployment.
         assert get_active_profile_name() == "default"
@@ -779,8 +779,8 @@ class TestWrapperScript:
 
     def test_creates_sh_on_posix(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "darwin")
-        monkeypatch.setattr("hermes_cli.profiles.shutil.which", lambda name: "/opt/hermes/bin/hermes")
-        from hermes_cli.profiles import create_wrapper_script
+        monkeypatch.setattr("kinqhi_cli.profiles.shutil.which", lambda name: "/opt/hermes/bin/hermes")
+        from kinqhi_cli.profiles import create_wrapper_script
         wrapper = create_wrapper_script("mybot")
         assert wrapper is not None
         assert wrapper.name == "mybot"
@@ -790,7 +790,7 @@ class TestWrapperScript:
 
     def test_creates_bat_on_windows(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "win32")
-        from hermes_cli.profiles import create_wrapper_script
+        from kinqhi_cli.profiles import create_wrapper_script
         wrapper = create_wrapper_script("mybot")
         assert wrapper is not None
         assert wrapper.name == "mybot.bat"
@@ -801,7 +801,7 @@ class TestWrapperScript:
 
     def test_remove_finds_bat_on_windows(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "win32")
-        from hermes_cli.profiles import create_wrapper_script, remove_wrapper_script
+        from kinqhi_cli.profiles import create_wrapper_script, remove_wrapper_script
         wrapper = create_wrapper_script("mybot")
         assert wrapper is not None
         assert wrapper.exists()
@@ -811,7 +811,7 @@ class TestWrapperScript:
 
     def test_remove_finds_sh_on_posix(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "darwin")
-        from hermes_cli.profiles import create_wrapper_script, remove_wrapper_script
+        from kinqhi_cli.profiles import create_wrapper_script, remove_wrapper_script
         wrapper = create_wrapper_script("mybot")
         assert wrapper is not None
         assert wrapper.exists()
@@ -820,14 +820,14 @@ class TestWrapperScript:
         assert not wrapper.exists()
 
     def test_remove_returns_false_when_absent(self, profile_env):
-        from hermes_cli.profiles import remove_wrapper_script
+        from kinqhi_cli.profiles import remove_wrapper_script
         assert remove_wrapper_script("nonexistent") is False
 
     def test_custom_alias_target_on_posix(self, profile_env, monkeypatch):
         # Custom alias name pointing at a differently-named profile: the file
         # is named after the alias, the -p content references the profile.
         monkeypatch.setattr("sys.platform", "darwin")
-        from hermes_cli.profiles import create_wrapper_script
+        from kinqhi_cli.profiles import create_wrapper_script
         wrapper = create_wrapper_script("rq", target="redqueen")
         assert wrapper is not None
         assert wrapper.name == "rq"
@@ -839,7 +839,7 @@ class TestWrapperScript:
         # Regression: custom-name aliases must still produce an executable
         # .bat (not a clobbered #!/bin/sh) on Windows.
         monkeypatch.setattr("sys.platform", "win32")
-        from hermes_cli.profiles import create_wrapper_script
+        from kinqhi_cli.profiles import create_wrapper_script
         wrapper = create_wrapper_script("rq", target="redqueen")
         assert wrapper is not None
         assert wrapper.name == "rq.bat"
@@ -859,7 +859,7 @@ class TestFindAliasForProfile:
 
     def test_profile_named_alias(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "darwin")
-        from hermes_cli.profiles import create_wrapper_script, find_alias_for_profile
+        from kinqhi_cli.profiles import create_wrapper_script, find_alias_for_profile
         create_wrapper_script("steve")
         assert find_alias_for_profile("steve") == "steve"
 
@@ -867,19 +867,19 @@ class TestFindAliasForProfile:
         # qiaobusi -> steve-jobs: the custom alias name must surface, not the
         # profile name, because that's the command the user actually typed.
         monkeypatch.setattr("sys.platform", "darwin")
-        from hermes_cli.profiles import create_wrapper_script, find_alias_for_profile
+        from kinqhi_cli.profiles import create_wrapper_script, find_alias_for_profile
         create_wrapper_script("qiaobusi", target="steve")
         assert find_alias_for_profile("steve") == "qiaobusi"
 
     def test_no_alias_returns_none(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "darwin")
-        from hermes_cli.profiles import find_alias_for_profile
+        from kinqhi_cli.profiles import find_alias_for_profile
         assert find_alias_for_profile("steve") is None
 
     def test_ignores_unrelated_files(self, profile_env, monkeypatch):
         # ~/.local/bin commonly holds unrelated binaries; they must not match.
         monkeypatch.setattr("sys.platform", "darwin")
-        from hermes_cli.profiles import _get_wrapper_dir, find_alias_for_profile
+        from kinqhi_cli.profiles import _get_wrapper_dir, find_alias_for_profile
         wrapper_dir = _get_wrapper_dir()
         wrapper_dir.mkdir(parents=True, exist_ok=True)
         (wrapper_dir / "pip").write_text("#!/bin/sh\nexec python -m pip \"$@\"\n")
@@ -887,14 +887,14 @@ class TestFindAliasForProfile:
 
     def test_custom_alias_on_windows(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "win32")
-        from hermes_cli.profiles import create_wrapper_script, find_alias_for_profile
+        from kinqhi_cli.profiles import create_wrapper_script, find_alias_for_profile
         create_wrapper_script("qiaobusi", target="steve")
         # The .bat extension must be stripped from the returned alias name.
         assert find_alias_for_profile("steve") == "qiaobusi"
 
     def test_list_profiles_surfaces_custom_alias(self, profile_env, monkeypatch):
         monkeypatch.setattr("sys.platform", "darwin")
-        from hermes_cli.profiles import (
+        from kinqhi_cli.profiles import (
             create_profile,
             create_wrapper_script,
             list_profiles,
@@ -921,7 +921,7 @@ class TestRenameProfile:
         assert old_dir.is_dir()
 
         # Mock alias collision to avoid subprocess calls
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"):
+        with patch("kinqhi_cli.profiles.check_alias_collision", return_value="skip"):
             new_dir = rename_profile("oldname", "newname")
 
         assert not old_dir.is_dir()
@@ -947,7 +947,7 @@ class TestRenameProfile:
             }
         }))
 
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"):
+        with patch("kinqhi_cli.profiles.check_alias_collision", return_value="skip"):
             rename_profile("ssi_health", "heimdall")
 
         cfg = json.loads(honcho_path.read_text())
@@ -965,7 +965,7 @@ class TestRenameProfile:
             }
         }))
 
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"):
+        with patch("kinqhi_cli.profiles.check_alias_collision", return_value="skip"):
             rename_profile("ssi_health", "heimdall")
 
         cfg = json.loads(honcho_path.read_text())
@@ -984,7 +984,7 @@ class TestRenameProfile:
             }
         }))
 
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"):
+        with patch("kinqhi_cli.profiles.check_alias_collision", return_value="skip"):
             rename_profile("ssi_health", "heimdall")
 
         cfg = json.loads(honcho_path.read_text())
@@ -1185,7 +1185,7 @@ class TestExportImport:
         (default_dir / "config.yaml").write_text("ok")
 
         # Create dirs/files that should be excluded
-        for d in ("hermes-agent", ".worktrees", "profiles", "bin",
+        for d in ("kinqhi", ".worktrees", "profiles", "bin",
                   "image_cache", "logs", "sandboxes", "checkpoints"):
             sub = default_dir / d
             sub.mkdir(exist_ok=True)
@@ -1208,7 +1208,7 @@ class TestExportImport:
 
         # Infrastructure excluded
         excluded_prefixes = [
-            "default/hermes-agent", "default/.worktrees", "default/profiles",
+            "default/kinqhi", "default/.worktrees", "default/profiles",
             "default/bin", "default/image_cache", "default/logs",
             "default/sandboxes", "default/checkpoints",
         ]
@@ -1317,66 +1317,66 @@ class TestProfileIsolation:
 
 
 # ===================================================================
-# TestGetProfilesRoot / TestGetDefaultHermesHome (internal helpers)
+# TestGetProfilesRoot / TestGetDefaultKinqhiHome (internal helpers)
 # ===================================================================
 
 class TestInternalHelpers:
-    """Tests for _get_profiles_root() and _get_default_hermes_home()."""
+    """Tests for _get_profiles_root() and _get_default_kinqhi_home()."""
 
     def test_profiles_root_under_home(self, profile_env):
         tmp_path = profile_env
         root = _get_profiles_root()
         assert root == tmp_path / ".hermes" / "profiles"
 
-    def test_default_hermes_home(self, profile_env):
+    def test_default_kinqhi_home(self, profile_env):
         tmp_path = profile_env
-        home = _get_default_hermes_home()
+        home = _get_default_kinqhi_home()
         assert home == tmp_path / ".hermes"
 
     def test_profiles_root_docker_deployment(self, tmp_path, monkeypatch):
-        """In Docker (HERMES_HOME outside ~/.hermes), profiles go under HERMES_HOME."""
+        """In Docker (KINQHI_HOME outside ~/.kinqhi), profiles go under KINQHI_HOME."""
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(docker_home))
+        monkeypatch.setenv("KINQHI_HOME", str(docker_home))
         root = _get_profiles_root()
         assert root == docker_home / "profiles"
 
-    def test_default_hermes_home_docker(self, tmp_path, monkeypatch):
-        """In Docker, _get_default_hermes_home() returns HERMES_HOME itself."""
+    def test_default_kinqhi_home_docker(self, tmp_path, monkeypatch):
+        """In Docker, _get_default_kinqhi_home() returns KINQHI_HOME itself."""
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(docker_home))
-        home = _get_default_hermes_home()
+        monkeypatch.setenv("KINQHI_HOME", str(docker_home))
+        home = _get_default_kinqhi_home()
         assert home == docker_home
 
     def test_profiles_root_profile_mode(self, tmp_path, monkeypatch):
-        """In profile mode (HERMES_HOME under ~/.hermes), profiles root is still ~/.hermes/profiles."""
+        """In profile mode (KINQHI_HOME under ~/.kinqhi), profiles root is still ~/.kinqhi/profiles."""
         native = tmp_path / ".hermes"
         profile_dir = native / "profiles" / "coder"
         profile_dir.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(profile_dir))
+        monkeypatch.setenv("KINQHI_HOME", str(profile_dir))
         root = _get_profiles_root()
         assert root == native / "profiles"
 
     def test_active_profile_path_docker(self, tmp_path, monkeypatch):
-        """In Docker, active_profile file lives under HERMES_HOME."""
-        from hermes_cli.profiles import _get_active_profile_path
+        """In Docker, active_profile file lives under KINQHI_HOME."""
+        from kinqhi_cli.profiles import _get_active_profile_path
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(docker_home))
+        monkeypatch.setenv("KINQHI_HOME", str(docker_home))
         path = _get_active_profile_path()
         assert path == docker_home / "active_profile"
 
     def test_create_profile_docker(self, tmp_path, monkeypatch):
-        """Profile created in Docker lands under HERMES_HOME/profiles/."""
+        """Profile created in Docker lands under KINQHI_HOME/profiles/."""
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(docker_home))
+        monkeypatch.setenv("KINQHI_HOME", str(docker_home))
         result = create_profile("orchestrator", no_alias=True)
         expected = docker_home / "profiles" / "orchestrator"
         assert result == expected
@@ -1387,7 +1387,7 @@ class TestInternalHelpers:
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(docker_home))
+        monkeypatch.setenv("KINQHI_HOME", str(docker_home))
         assert get_active_profile_name() == "default"
 
     def test_active_profile_name_docker_profile(self, tmp_path, monkeypatch):
@@ -1396,7 +1396,7 @@ class TestInternalHelpers:
         profile = docker_home / "profiles" / "orchestrator"
         profile.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(profile))
+        monkeypatch.setenv("KINQHI_HOME", str(profile))
         assert get_active_profile_name() == "orchestrator"
 
 
@@ -1422,7 +1422,7 @@ class TestEdgeCases:
 
     def test_gateway_running_check_with_pid_file(self, profile_env):
         """Verify _check_gateway_running uses the shared gateway PID validator."""
-        from hermes_cli.profiles import _check_gateway_running
+        from kinqhi_cli.profiles import _check_gateway_running
         tmp_path = profile_env
         default_home = tmp_path / ".hermes"
 
@@ -1435,7 +1435,7 @@ class TestEdgeCases:
 
     def test_gateway_running_check_plain_pid(self, profile_env):
         """Shared PID validator returning None means the profile is not running."""
-        from hermes_cli.profiles import _check_gateway_running
+        from kinqhi_cli.profiles import _check_gateway_running
         tmp_path = profile_env
         default_home = tmp_path / ".hermes"
 
@@ -1484,7 +1484,7 @@ class TestEdgeCases:
         set_active_profile("coder")
         assert get_active_profile() == "coder"
 
-        with patch("hermes_cli.profiles._cleanup_gateway_service"):
+        with patch("kinqhi_cli.profiles._cleanup_gateway_service"):
             delete_profile("coder", yes=True)
 
         assert get_active_profile() == "default"
@@ -1498,13 +1498,13 @@ class TestProfilesToServe:
         assert len(serve) == 1
         name, home = serve[0]
         assert name == "default"
-        assert home == _get_default_hermes_home()
+        assert home == _get_default_kinqhi_home()
 
     def test_off_returns_only_active_named(self, profile_env, monkeypatch):
-        # A named profile's gateway runs with HERMES_HOME pointing at the
+        # A named profile's gateway runs with KINQHI_HOME pointing at the
         # profile dir; get_active_profile_name() infers the name from there.
         create_profile("coder", no_alias=True)
-        monkeypatch.setenv("HERMES_HOME", str(get_profile_dir("coder")))
+        monkeypatch.setenv("KINQHI_HOME", str(get_profile_dir("coder")))
         serve = profiles_to_serve(multiplex=False)
         assert len(serve) == 1
         assert serve[0][0] == "coder"
@@ -1515,7 +1515,7 @@ class TestProfilesToServe:
         create_profile("writer", no_alias=True)
         serve = dict(profiles_to_serve(multiplex=True))
         assert set(serve) == {"default", "coder", "writer"}
-        assert serve["default"] == _get_default_hermes_home()
+        assert serve["default"] == _get_default_kinqhi_home()
         assert serve["coder"] == get_profile_dir("coder")
 
     def test_on_default_always_first(self, profile_env):

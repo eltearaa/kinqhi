@@ -57,7 +57,7 @@ def _patch_oauth_flow(
     # run headless, so force the GUI path to True — the URL capture relies on
     # webbrowser.open() being invoked.
     monkeypatch.setattr(
-        "hermes_cli.auth._can_open_graphical_browser", lambda: True
+        "kinqhi_cli.auth._can_open_graphical_browser", lambda: True
     )
     monkeypatch.setattr("builtins.input", lambda *_a, **_kw: callback_code)
 
@@ -91,7 +91,7 @@ def test_authorization_url_state_is_not_pkce_verifier(monkeypatch, tmp_path):
     Reusing the verifier as state leaks the verifier into browser history,
     Referer headers, and auth-server access logs — defeating RFC 7636.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
     captured_url: Dict[str, str] = {}
     captured_token: Dict[str, Any] = {}
@@ -157,7 +157,7 @@ def test_callback_state_mismatch_aborts(monkeypatch, tmp_path, caplog):
     CSRF protection that ``state`` is supposed to provide (RFC 6749 §10.12)
     would be absent.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
     captured_token: Dict[str, Any] = {}
     _patch_oauth_flow(

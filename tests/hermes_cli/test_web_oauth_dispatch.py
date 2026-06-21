@@ -1,4 +1,4 @@
-"""Regression tests for the OAuth dispatcher in hermes_cli.web_server.
+"""Regression tests for the OAuth dispatcher in kinqhi_cli.web_server.
 
 Bug history (2026-05-09): the `_OAUTH_PROVIDER_CATALOG` had two entries
 flagged ``flow: "pkce"`` — anthropic and minimax-oauth — and the
@@ -28,14 +28,14 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from hermes_cli.web_server import _SESSION_TOKEN, app
+from kinqhi_cli.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
-HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-Kinqhi-Session-Token": _SESSION_TOKEN}
 
 
 def _make_profile_home(tmp_path, monkeypatch, profile="coder"):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
     profile_home = tmp_path / "profiles" / profile
     profile_home.mkdir(parents=True)
     return profile_home
@@ -78,13 +78,13 @@ def test_minimax_login_does_not_launch_anthropic_flow():
         "state": "stub-state",
     }
     with patch(
-        "hermes_cli.auth._minimax_request_user_code",
+        "kinqhi_cli.auth._minimax_request_user_code",
         return_value=fake_user_code_resp,
     ), patch(
-        "hermes_cli.auth._minimax_pkce_pair",
+        "kinqhi_cli.auth._minimax_pkce_pair",
         return_value=("verifier-stub", "challenge-stub", "stub-state"),
     ), patch(
-        "hermes_cli.web_server._minimax_poller",
+        "kinqhi_cli.web_server._minimax_poller",
         return_value=None,
     ):
         resp = client.post(
@@ -108,8 +108,8 @@ def test_minimax_login_does_not_launch_anthropic_flow():
 
 
 def test_nous_dashboard_device_flow_ignores_legacy_scope_override(monkeypatch):
-    from hermes_cli import auth as auth_mod
-    from hermes_cli import web_server as ws
+    from kinqhi_cli import auth as auth_mod
+    from kinqhi_cli import web_server as ws
 
     requested_scopes = []
 
@@ -117,7 +117,7 @@ def test_nous_dashboard_device_flow_ignores_legacy_scope_override(monkeypatch):
         requested_scopes.append(kwargs["scope"])
         return _fake_nous_device_data()
 
-    monkeypatch.setenv("HERMES_AGENT_USE_LEGACY_SESSION_KEYS", "true")
+    monkeypatch.setenv("KINQHI_AGENT_USE_LEGACY_SESSION_KEYS", "true")
     monkeypatch.setattr(auth_mod, "_request_device_code", fake_request_device_code)
     monkeypatch.setattr(ws, "_nous_poller", lambda sid: None)
 
@@ -135,14 +135,14 @@ def test_nous_dashboard_device_flow_ignores_legacy_scope_override(monkeypatch):
 
 
 def test_oauth_provider_status_uses_profile_query(tmp_path, monkeypatch):
-    from hermes_cli import web_server as ws
-    from hermes_constants import get_hermes_home
+    from kinqhi_cli import web_server as ws
+    from kinqhi_constants import get_kinqhi_home
 
     profile_home = _make_profile_home(tmp_path, monkeypatch)
     observed_homes = []
 
     def fake_status():
-        observed_homes.append(get_hermes_home())
+        observed_homes.append(get_kinqhi_home())
         return {"logged_in": False, "source": None}
 
     fake_catalog = ({
@@ -162,7 +162,7 @@ def test_oauth_provider_status_uses_profile_query(tmp_path, monkeypatch):
 
 
 def test_oauth_start_stores_profile_for_background_completion(tmp_path, monkeypatch):
-    from hermes_cli import web_server as ws
+    from kinqhi_cli import web_server as ws
 
     _make_profile_home(tmp_path, monkeypatch)
     fake_user_code_resp = {
@@ -173,13 +173,13 @@ def test_oauth_start_stores_profile_for_background_completion(tmp_path, monkeypa
         "state": "stub-state",
     }
     with patch(
-        "hermes_cli.auth._minimax_request_user_code",
+        "kinqhi_cli.auth._minimax_request_user_code",
         return_value=fake_user_code_resp,
     ), patch(
-        "hermes_cli.auth._minimax_pkce_pair",
+        "kinqhi_cli.auth._minimax_pkce_pair",
         return_value=("verifier-stub", "challenge-stub", "stub-state"),
     ), patch(
-        "hermes_cli.web_server._minimax_poller",
+        "kinqhi_cli.web_server._minimax_poller",
         return_value=None,
     ):
         resp = client.post(
@@ -196,8 +196,8 @@ def test_oauth_start_stores_profile_for_background_completion(tmp_path, monkeypa
 
 
 def test_nous_dashboard_device_flow_does_not_retry_legacy_scope_on_invoke_refusal(monkeypatch):
-    from hermes_cli import auth as auth_mod
-    from hermes_cli import web_server as ws
+    from kinqhi_cli import auth as auth_mod
+    from kinqhi_cli import web_server as ws
 
     requested_scopes = []
 
@@ -205,7 +205,7 @@ def test_nous_dashboard_device_flow_does_not_retry_legacy_scope_on_invoke_refusa
         requested_scopes.append(kwargs["scope"])
         raise _invoke_scope_refusal()
 
-    monkeypatch.delenv("HERMES_AGENT_USE_LEGACY_SESSION_KEYS", raising=False)
+    monkeypatch.delenv("KINQHI_AGENT_USE_LEGACY_SESSION_KEYS", raising=False)
     monkeypatch.setattr(auth_mod, "_request_device_code", fake_request_device_code)
     monkeypatch.setattr(ws, "_nous_poller", lambda sid: None)
 
@@ -215,9 +215,9 @@ def test_nous_dashboard_device_flow_does_not_retry_legacy_scope_on_invoke_refusa
 
 
 def test_codex_dashboard_worker_persists_runtime_provider(tmp_path, monkeypatch):
-    from hermes_cli import web_server as ws
-    from hermes_cli.auth import get_active_provider
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from kinqhi_cli import web_server as ws
+    from kinqhi_cli.auth import get_active_provider
+    from kinqhi_cli.runtime_provider import resolve_runtime_provider
 
     access_token = "h.eyJleHAiOjk5OTk5OTk5OTl9.s"
 
@@ -256,7 +256,7 @@ def test_codex_dashboard_worker_persists_runtime_provider(tmp_path, monkeypatch)
                 "refresh_token": "codex-refresh",
             })
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
     monkeypatch.setattr(httpx, "Client", _Client)
     monkeypatch.setattr(ws.time, "sleep", lambda _: None)
 
@@ -276,9 +276,9 @@ def test_codex_dashboard_worker_persists_runtime_provider(tmp_path, monkeypatch)
 
 
 def test_codex_dashboard_worker_persists_inside_session_profile(tmp_path, monkeypatch):
-    from hermes_cli import auth as auth_mod
-    from hermes_cli import web_server as ws
-    from hermes_constants import get_hermes_home
+    from kinqhi_cli import auth as auth_mod
+    from kinqhi_cli import web_server as ws
+    from kinqhi_constants import get_kinqhi_home
 
     profile_home = _make_profile_home(tmp_path, monkeypatch)
 
@@ -323,7 +323,7 @@ def test_codex_dashboard_worker_persists_inside_session_profile(tmp_path, monkey
     monkeypatch.setattr(
         auth_mod,
         "_save_codex_tokens",
-        lambda tokens: saved_homes.append(get_hermes_home()),
+        lambda tokens: saved_homes.append(get_kinqhi_home()),
     )
 
     sid, _ = ws._new_oauth_session(
@@ -341,8 +341,8 @@ def test_codex_dashboard_worker_persists_inside_session_profile(tmp_path, monkey
 
 
 def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(monkeypatch):
-    from hermes_cli import auth as auth_mod
-    from hermes_cli import web_server as ws
+    from kinqhi_cli import auth as auth_mod
+    from kinqhi_cli import web_server as ws
 
     session_id = "nous-effective-scope-test"
     ws._oauth_sessions[session_id] = {
@@ -353,7 +353,7 @@ def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(
         "status": "pending",
         "error_message": None,
         "portal_base_url": "https://portal.nousresearch.com",
-        "client_id": "hermes-cli",
+        "client_id": "kinqhi-cli",
         "device_code": "device-code",
         "interval": 5,
         "expires_at": time.time() + 600,
@@ -392,7 +392,7 @@ def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(
 
 def test_minimax_dashboard_poller_accepts_absolute_ms_expired_in():
     """Dashboard MiniMax completion must accept unix-ms token expiry values."""
-    from hermes_cli import web_server as ws
+    from kinqhi_cli import web_server as ws
 
     now = datetime.now(timezone.utc)
     abs_ms = int((now.timestamp() + 1800) * 1000)
@@ -416,7 +416,7 @@ def test_minimax_dashboard_poller_accepts_absolute_ms_expired_in():
 
     try:
         with patch(
-            "hermes_cli.auth._minimax_poll_token",
+            "kinqhi_cli.auth._minimax_poll_token",
             return_value={
                 "status": "success",
                 "access_token": "access",
@@ -425,7 +425,7 @@ def test_minimax_dashboard_poller_accepts_absolute_ms_expired_in():
                 "token_type": "Bearer",
             },
         ), patch(
-            "hermes_cli.auth._minimax_save_auth_state",
+            "kinqhi_cli.auth._minimax_save_auth_state",
             side_effect=lambda state: captured_state.update(state),
         ):
             ws._minimax_poller(session_id)
@@ -446,7 +446,7 @@ def test_anthropic_pkce_branch_still_works():
         "expires_in": 600,
     }
     with patch(
-        "hermes_cli.web_server._start_anthropic_pkce",
+        "kinqhi_cli.web_server._start_anthropic_pkce",
         return_value=fake_anthropic_response,
     ):
         resp = client.post(
@@ -472,11 +472,11 @@ def test_xai_oauth_listed_as_loopback_flow():
 
 def test_accounts_offers_every_oauth_provider_from_catalog():
     """PARITY CONTRACT: every accounts-tab provider in the unified catalog (the
-    `hermes model` universe) must be offered by /api/providers/oauth. This keeps
+    `kinqhi model` universe) must be offered by /api/providers/oauth. This keeps
     the desktop Accounts tab in lockstep with the CLI picker — no provider the
     CLI can sign into may be missing from the GUI.
     """
-    from hermes_cli.provider_catalog import provider_catalog
+    from kinqhi_cli.provider_catalog import provider_catalog
 
     resp = client.get("/api/providers/oauth", headers=HEADERS)
     assert resp.status_code == 200, resp.text
@@ -484,7 +484,7 @@ def test_accounts_offers_every_oauth_provider_from_catalog():
     for d in provider_catalog():
         if d.tab == "accounts":
             assert d.slug in offered, (
-                f"{d.slug} is an accounts-tab provider in `hermes model` but is "
+                f"{d.slug} is an accounts-tab provider in `kinqhi model` but is "
                 f"missing from the desktop Accounts tab (/api/providers/oauth)"
             )
 
@@ -504,7 +504,7 @@ def test_gemini_cli_and_copilot_acp_now_in_accounts():
 
 
 def test_oauth_catalog_marks_external_providers_not_disconnectable():
-    """External CLI credentials are visible in Accounts but cannot be removed by Hermes."""
+    """External CLI credentials are visible in Accounts but cannot be removed by Kinqhi."""
     resp = client.get("/api/providers/oauth", headers=HEADERS)
     assert resp.status_code == 200, resp.text
     providers = {p["id"]: p for p in resp.json()["providers"]}
@@ -528,7 +528,7 @@ def test_oauth_catalog_marks_external_providers_not_disconnectable():
 
 def test_external_oauth_disconnect_rejected_before_auth_mutation(monkeypatch):
     """DELETE must not pretend to remove credentials owned by another CLI."""
-    from hermes_cli import auth as auth_mod
+    from kinqhi_cli import auth as auth_mod
 
     def fail_clear_provider_auth(provider_id=None):
         raise AssertionError("external providers must not reach clear_provider_auth")
@@ -560,8 +560,8 @@ def test_env_sourced_oauth_status_is_not_disconnectable(monkeypatch):
 
 def test_xai_loopback_start_returns_authorize_url(monkeypatch):
     """Start MUST bind the loopback listener and hand back an xAI authorize URL."""
-    from hermes_cli import auth as auth_mod
-    from hermes_cli import web_server as ws
+    from kinqhi_cli import auth as auth_mod
+    from kinqhi_cli import web_server as ws
 
     class _FakeServer:
         def shutdown(self):
@@ -612,8 +612,8 @@ def test_xai_loopback_start_returns_authorize_url(monkeypatch):
 
 def test_xai_loopback_worker_persists_tokens_on_success(monkeypatch):
     """The worker exchanges the callback code and marks the session approved."""
-    from hermes_cli import auth as auth_mod
-    from hermes_cli import web_server as ws
+    from kinqhi_cli import auth as auth_mod
+    from kinqhi_cli import web_server as ws
 
     saved = {}
     session_id = "xai-loopback-success-test"
@@ -668,8 +668,8 @@ def test_xai_loopback_worker_persists_tokens_on_success(monkeypatch):
 
 def test_xai_loopback_worker_fails_on_state_mismatch(monkeypatch):
     """A mismatched OAuth state must fail the session, not persist tokens."""
-    from hermes_cli import auth as auth_mod
-    from hermes_cli import web_server as ws
+    from kinqhi_cli import auth as auth_mod
+    from kinqhi_cli import web_server as ws
 
     session_id = "xai-loopback-state-test"
     ws._oauth_sessions[session_id] = {
@@ -712,8 +712,8 @@ def test_xai_loopback_worker_fails_on_state_mismatch(monkeypatch):
 
 def test_xai_loopback_worker_skips_persist_when_cancelled(monkeypatch):
     """If the session is cancelled while waiting, the worker must not persist."""
-    from hermes_cli import auth as auth_mod
-    from hermes_cli import web_server as ws
+    from kinqhi_cli import auth as auth_mod
+    from kinqhi_cli import web_server as ws
 
     session_id = "xai-loopback-cancel-test"
     ws._oauth_sessions[session_id] = {
@@ -756,7 +756,7 @@ def test_xai_loopback_worker_skips_persist_when_cancelled(monkeypatch):
 
 def test_cancel_loopback_session_shuts_down_callback_server():
     """Cancelling a loopback session must free the bound callback port now."""
-    from hermes_cli import web_server as ws
+    from kinqhi_cli import web_server as ws
 
     shutdown_calls = {"shutdown": 0, "close": 0, "join": 0}
 
@@ -809,7 +809,7 @@ def test_unknown_pkce_provider_rejected_cleanly():
     branch, then hit "Unsupported flow" — proving the bug class is
     structurally prevented.
     """
-    from hermes_cli import web_server as ws
+    from kinqhi_cli import web_server as ws
 
     # Inject a hypothetical catalog entry that's pkce-flagged but isn't
     # anthropic. This shape mirrors what would happen if a developer
@@ -845,10 +845,10 @@ def test_status_falls_through_to_generic_dispatcher_for_catalog_only_provider():
     Providers appended to the Accounts tab from the unified provider_catalog()
     carry status_fn=None and may have no explicit branch in
     _resolve_provider_status. Before the fallthrough they rendered permanently
-    logged-out; now they dispatch to hermes_cli.auth.get_auth_status (the
+    logged-out; now they dispatch to kinqhi_cli.auth.get_auth_status (the
     canonical slug dispatcher) so membership AND status both auto-extend.
     """
-    import hermes_cli.web_server as ws
+    import kinqhi_cli.web_server as ws
 
     fake_status = {
         "logged_in": True,
@@ -858,7 +858,7 @@ def test_status_falls_through_to_generic_dispatcher_for_catalog_only_provider():
         "expires_at": "2026-12-01T00:00:00Z",
         "has_refresh_token": True,
     }
-    with patch("hermes_cli.auth.get_auth_status", return_value=fake_status):
+    with patch("kinqhi_cli.auth.get_auth_status", return_value=fake_status):
         out = ws._resolve_provider_status("some-future-oauth", None)
 
     assert out["logged_in"] is True
@@ -872,10 +872,10 @@ def test_status_falls_through_to_generic_dispatcher_for_catalog_only_provider():
 
 def test_status_hardcoded_branch_wins_over_generic_fallback():
     """An existing hardcoded branch (nous) is unaffected by the fallthrough."""
-    import hermes_cli.web_server as ws
+    import kinqhi_cli.web_server as ws
 
     with patch(
-        "hermes_cli.auth.get_nous_auth_status",
+        "kinqhi_cli.auth.get_nous_auth_status",
         return_value={"logged_in": True, "portal_base_url": "https://portal.test"},
     ):
         out = ws._resolve_provider_status("nous", None)
@@ -885,8 +885,8 @@ def test_status_hardcoded_branch_wins_over_generic_fallback():
 
 def test_status_unknown_provider_degrades_to_logged_out():
     """A provider the generic dispatcher can't resolve stays logged-out cleanly."""
-    import hermes_cli.web_server as ws
+    import kinqhi_cli.web_server as ws
 
-    with patch("hermes_cli.auth.get_auth_status", return_value={"logged_in": False}):
+    with patch("kinqhi_cli.auth.get_auth_status", return_value={"logged_in": False}):
         out = ws._resolve_provider_status("totally-unknown", None)
     assert out["logged_in"] is False

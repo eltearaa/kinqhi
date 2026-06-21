@@ -36,7 +36,7 @@ class TestModuleSurface:
         )
 
     def test_expected_hermes_specific_tools_listed(self):
-        """The Hermes-specific tools should be present so users on the
+        """The Kinqhi-specific tools should be present so users on the
         codex runtime keep access to them."""
         from agent.transports.hermes_tools_mcp_server import EXPOSED_TOOLS
         for required in (

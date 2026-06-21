@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import logging
 
-from hermes_cli.auth import (
+from kinqhi_cli.auth import (
     DEFAULT_NOUS_INFERENCE_URL,
     _ALLOWED_NOUS_INFERENCE_HOSTS,
     _validate_nous_inference_url_from_network,
@@ -40,7 +40,7 @@ class TestValidatorRules:
         assert _validate_nous_inference_url_from_network(url) == url.rstrip("/")
 
     def test_attacker_host_rejected(self, caplog):
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.auth"):
+        with caplog.at_level(logging.WARNING, logger="kinqhi_cli.auth"):
             assert (
                 _validate_nous_inference_url_from_network("https://attacker.com/v1")
                 is None
@@ -61,7 +61,7 @@ class TestValidatorRules:
         )
 
     def test_http_scheme_rejected(self, caplog):
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.auth"):
+        with caplog.at_level(logging.WARNING, logger="kinqhi_cli.auth"):
             assert (
                 _validate_nous_inference_url_from_network(
                     "http://inference-api.nousresearch.com/v1"
@@ -141,7 +141,7 @@ class TestCallSiteWiring:
     """
 
     def _read_auth_source(self):
-        import hermes_cli.auth as _auth_mod
+        import kinqhi_cli.auth as _auth_mod
         from pathlib import Path
         return Path(_auth_mod.__file__).read_text(encoding="utf-8")
 
@@ -180,7 +180,7 @@ class TestCallSiteWiring:
         bypass at the source layer still gets caught at the forward
         boundary."""
         from pathlib import Path
-        import hermes_cli.proxy.adapters.nous_portal as _nous_adapter
+        import kinqhi_cli.proxy.adapters.nous_portal as _nous_adapter
         source = Path(_nous_adapter.__file__).read_text(encoding="utf-8")
         assert "_validate_nous_inference_url_from_network" in source
 
@@ -201,7 +201,7 @@ class TestEnvOverrideNotGated:
         read via os.getenv directly, not via the validator. Grep the
         source to confirm: the env line should NOT mention the
         validator."""
-        import hermes_cli.auth as _auth_mod
+        import kinqhi_cli.auth as _auth_mod
         from pathlib import Path
         source = Path(_auth_mod.__file__).read_text(encoding="utf-8")
         # Find the env-override read line.
@@ -228,13 +228,13 @@ class TestHealsPoisonedStoredValue:
     """
 
     def test_refresh_resets_rejected_url_to_default(self, monkeypatch):
-        import hermes_cli.auth as auth
+        import kinqhi_cli.auth as auth
 
         poisoned = "https://stg-inference-api.nousresearch.com/v1"
         state = {
             "access_token": "tok",
             "refresh_token": "rtok",
-            "client_id": "hermes-cli",
+            "client_id": "kinqhi-cli",
             "portal_base_url": auth.DEFAULT_NOUS_PORTAL_URL,
             "inference_base_url": poisoned,
         }
@@ -265,13 +265,13 @@ class TestHealsPoisonedStoredValue:
 
     def test_refresh_keeps_valid_url(self, monkeypatch):
         """A legitimate allowlisted URL from the Portal is preserved."""
-        import hermes_cli.auth as auth
+        import kinqhi_cli.auth as auth
 
         good = "https://inference-api.nousresearch.com/v1"
         state = {
             "access_token": "tok",
             "refresh_token": "rtok",
-            "client_id": "hermes-cli",
+            "client_id": "kinqhi-cli",
             "portal_base_url": auth.DEFAULT_NOUS_PORTAL_URL,
             "inference_base_url": good,
         }

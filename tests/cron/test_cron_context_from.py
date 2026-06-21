@@ -11,20 +11,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 @pytest.fixture
 def cron_env(tmp_path, monkeypatch):
-    """Isolated cron environment with temp HERMES_HOME."""
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "cron").mkdir()
-    (hermes_home / "cron" / "output").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    """Isolated cron environment with temp KINQHI_HOME."""
+    kinqhi_home = tmp_path / ".hermes"
+    kinqhi_home.mkdir()
+    (kinqhi_home / "cron").mkdir()
+    (kinqhi_home / "cron" / "output").mkdir()
+    monkeypatch.setenv("KINQHI_HOME", str(kinqhi_home))
 
     import cron.jobs as jobs_mod
-    monkeypatch.setattr(jobs_mod, "HERMES_DIR", hermes_home)
-    monkeypatch.setattr(jobs_mod, "CRON_DIR", hermes_home / "cron")
-    monkeypatch.setattr(jobs_mod, "JOBS_FILE", hermes_home / "cron" / "jobs.json")
-    monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", hermes_home / "cron" / "output")
+    monkeypatch.setattr(jobs_mod, "KINQHI_DIR", kinqhi_home)
+    monkeypatch.setattr(jobs_mod, "CRON_DIR", kinqhi_home / "cron")
+    monkeypatch.setattr(jobs_mod, "JOBS_FILE", kinqhi_home / "cron" / "jobs.json")
+    monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", kinqhi_home / "cron" / "output")
 
-    return hermes_home
+    return kinqhi_home
 
 
 class TestJobContextFromField:

@@ -1,11 +1,11 @@
 """Tests for `_print_curator_recent_run_notice`.
 
-The notice prints the most recent curator run summary on `hermes update`,
+The notice prints the most recent curator run summary on `kinqhi update`,
 exactly once per run. Show-once is enforced by stamping
 `last_run_summary_shown_at` in curator state after printing.
 
 Why this matters: the curator runs in the background (gateway tick + CLI
-session start) so users normally never see the rename map. `hermes update`
+session start) so users normally never see the rename map. `kinqhi update`
 is the high-attention surface where consolidations should land.
 """
 
@@ -24,14 +24,14 @@ def curator_env(tmp_path, monkeypatch, capsys):
     home.mkdir()
     (home / "skills").mkdir()
     (home / "logs").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("KINQHI_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    import kinqhi_constants
+    importlib.reload(kinqhi_constants)
     from agent import curator
     importlib.reload(curator)
-    from hermes_cli import main as hermes_main
+    from kinqhi_cli import main as hermes_main
     importlib.reload(hermes_main)
 
     yield {
@@ -78,7 +78,7 @@ def test_prints_multiline_summary_with_rename_map(curator_env):
         "archived 2 skill(s):\n"
         "  • pdf-extraction → document-tools\n"
         "  • docx-extraction → document-tools\n"
-        "full report: hermes curator status"
+        "full report: kinqhi curator status"
     )
     _set_state(
         curator_env["curator"],
@@ -100,7 +100,7 @@ def test_show_once_semantics(curator_env):
         "auto: no changes; llm: consolidated 1 into 1\n"
         "archived 1 skill(s):\n"
         "  • old → new\n"
-        "full report: hermes curator status"
+        "full report: kinqhi curator status"
     )
     _set_state(
         curator_env["curator"],
@@ -127,7 +127,7 @@ def test_new_run_resets_show_once(curator_env):
             "auto: no changes; llm: consolidated 1 into 1\n"
             "archived 1 skill(s):\n"
             "  • thing-a → umbrella\n"
-            "full report: hermes curator status"
+            "full report: kinqhi curator status"
         ),
     )
     curator_env["main"]._print_curator_recent_run_notice()
@@ -142,7 +142,7 @@ def test_new_run_resets_show_once(curator_env):
             "auto: no changes; llm: consolidated 1 into 1\n"
             "archived 1 skill(s):\n"
             "  • thing-b → umbrella\n"
-            "full report: hermes curator status"
+            "full report: kinqhi curator status"
         ),
     )
     curator_env["main"]._print_curator_recent_run_notice()

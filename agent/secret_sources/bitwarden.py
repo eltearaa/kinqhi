@@ -1,24 +1,24 @@
 """Bitwarden Secrets Manager (`bws` CLI) integration.
 
-Hermes pulls API keys from Bitwarden Secrets Manager at process startup
-so they don't have to live in plaintext in ``~/.hermes/.env``.
+Kinqhi pulls API keys from Bitwarden Secrets Manager at process startup
+so they don't have to live in plaintext in ``~/.kinqhi/.env``.
 
 Design summary
 --------------
 
-* The ``bws`` binary is auto-installed into ``<hermes_home>/bin/bws`` on
-  first use.  Hermes pins one version (``_BWS_VERSION``) and downloads
+* The ``bws`` binary is auto-installed into ``<kinqhi_home>/bin/bws`` on
+  first use.  Kinqhi pins one version (``_BWS_VERSION``) and downloads
   the matching asset from the official GitHub Releases page, verifying
   the SHA-256 against the release's published checksum file.
-* The access token is stored in ``~/.hermes/.env`` as
+* The access token is stored in ``~/.kinqhi/.env`` as
   ``BWS_ACCESS_TOKEN`` (or whatever name the user picked in
   ``secrets.bitwarden.access_token_env``).  This is the one
   bootstrap secret — every other provider key can live in Bitwarden.
 * Pulling secrets is a single ``bws secret list <project_id>
   --output json`` call.  We cache the result in-process for
-  ``cache_ttl_seconds`` so back-to-back ``hermes`` invocations don't
+  ``cache_ttl_seconds`` so back-to-back ``kinqhi`` invocations don't
   hammer the API.
-* Failures NEVER block Hermes startup.  Missing binary, no network,
+* Failures NEVER block Kinqhi startup.  Missing binary, no network,
   expired token, etc. all emit a one-line warning and continue with
   whatever credentials ``.env`` already had.
 
@@ -72,27 +72,27 @@ _BWS_RUN_TIMEOUT = 30
 _CacheKey = Tuple[str, str, str]  # (access_token_fingerprint, project_id, server_url)
 _CACHE: Dict[_CacheKey, "_CachedFetch"] = {}
 
-# Disk-persisted cache so back-to-back CLI invocations (e.g. `hermes chat -q ...`
+# Disk-persisted cache so back-to-back CLI invocations (e.g. `kinqhi chat -q ...`
 # called from scripts, cron, the gateway forking new agents) don't each pay the
 # ~380ms `bws secret list` tax. The in-process _CACHE above only saves repeated
 # fetches WITHIN one process; this saves repeated fetches ACROSS processes.
 #
 # Layout: one JSON object per cache key, written atomically with mode 0600 in
-# <hermes_home>/cache/bws_cache.json. The file holds only the secret VALUES,
-# never the access token. It's plaintext-equivalent to ~/.hermes/.env (which
+# <kinqhi_home>/cache/bws_cache.json. The file holds only the secret VALUES,
+# never the access token. It's plaintext-equivalent to ~/.kinqhi/.env (which
 # we already accept) but kept out of the .env file so users editing it won't
 # accidentally commit BSM-sourced secrets.
 _DISK_CACHE_BASENAME = "bws_cache.json"
 
 
 def _disk_cache_path(home_path: Optional[Path] = None) -> Path:
-    """Return the disk cache path under hermes_home/cache/.
+    """Return the disk cache path under kinqhi_home/cache/.
 
     `home_path` is what `load_hermes_dotenv()` already resolved; falling back
-    to `$HERMES_HOME` / `~/.hermes` keeps direct callers working too.
+    to `$KINQHI_HOME` / `~/.kinqhi` keeps direct callers working too.
     """
     if home_path is None:
-        home_path = Path(os.getenv("HERMES_HOME", Path.home() / ".hermes"))
+        home_path = Path(os.getenv("KINQHI_HOME", Path.home() / ".kinqhi"))
     return home_path / "cache" / _DISK_CACHE_BASENAME
 
 
@@ -207,17 +207,17 @@ class FetchResult:
 
 
 def _hermes_bin_dir() -> Path:
-    """Where Hermes stores its managed binaries.  Profile-aware."""
-    from hermes_constants import get_hermes_home
+    """Where Kinqhi stores its managed binaries.  Profile-aware."""
+    from kinqhi_constants import get_kinqhi_home
 
-    return get_hermes_home() / "bin"
+    return get_kinqhi_home() / "bin"
 
 
 def find_bws(*, install_if_missing: bool = False) -> Optional[Path]:
     """Return a path to a usable ``bws`` binary, or None.
 
     Resolution order:
-      1. ``<hermes_home>/bin/bws``  (our managed copy — preferred)
+      1. ``<kinqhi_home>/bin/bws``  (our managed copy — preferred)
       2. ``shutil.which("bws")``    (system PATH)
 
     When ``install_if_missing`` is True and neither resolves, this calls
@@ -292,7 +292,7 @@ def install_bws(*, force: bool = False) -> Path:
 
     Returns the path to the installed executable.  Raises on any
     failure (network, checksum, extraction) — callers in the auto-install
-    path catch these; the user-facing ``hermes secrets bitwarden setup``
+    path catch these; the user-facing ``kinqhi secrets bitwarden setup``
     surface lets them propagate so the wizard can show a clear error.
     """
     bin_dir = _hermes_bin_dir()
@@ -306,7 +306,7 @@ def install_bws(*, force: bool = False) -> Path:
     asset_url = f"{_BWS_RELEASE_BASE}/{asset_name}"
     checksum_url = f"{_BWS_RELEASE_BASE}/{_BWS_CHECKSUM_NAME}"
 
-    with tempfile.TemporaryDirectory(prefix="hermes-bws-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="kinqhi-bws-") as tmpdir:
         tmp = Path(tmpdir)
         zip_path = tmp / asset_name
         checksum_path = tmp / _BWS_CHECKSUM_NAME
@@ -349,7 +349,7 @@ def install_bws(*, force: bool = False) -> Path:
 
 
 def _http_download(url: str, dest: Path) -> None:
-    req = urllib.request.Request(url, headers={"User-Agent": "hermes-agent"})
+    req = urllib.request.Request(url, headers={"User-Agent": "kinqhi"})
     try:
         with urllib.request.urlopen(req, timeout=_BWS_DOWNLOAD_TIMEOUT) as resp:  # noqa: S310
             with open(dest, "wb") as f:
@@ -458,10 +458,10 @@ def fetch_bitwarden_secrets(
 
     Caching is a two-layer LRU: an in-process dict (for hot-reload paths
     inside one process) and a disk-persisted JSON file under
-    ``<hermes_home>/cache/bws_cache.json`` (for back-to-back CLI invocations).
+    ``<kinqhi_home>/cache/bws_cache.json`` (for back-to-back CLI invocations).
     Both share the same TTL.  Pass ``home_path`` so disk cache lookups find
     the right directory in tests / non-standard installs; otherwise we fall
-    back to ``$HERMES_HOME`` / ``~/.hermes``.
+    back to ``$KINQHI_HOME`` / ``~/.kinqhi``.
 
     Raises :class:`RuntimeError` for fatal conditions (missing binary,
     auth failure, unparseable output).  Callers in the env_loader path
@@ -492,7 +492,7 @@ def fetch_bitwarden_secrets(
             "bws binary not available — auto-install failed and `bws` is "
             "not on PATH.  Install manually from "
             "https://github.com/bitwarden/sdk-sm/releases or re-run "
-            "`hermes secrets bitwarden setup`."
+            "`kinqhi secrets bitwarden setup`."
         )
 
     secrets, warnings = _run_bws_list(bws, access_token, project_id, server_url)
@@ -584,7 +584,7 @@ def _is_valid_env_name(name: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Public entry point — called from hermes_cli.env_loader
+# Public entry point — called from kinqhi_cli.env_loader
 # ---------------------------------------------------------------------------
 
 
@@ -621,14 +621,14 @@ def apply_bitwarden_secrets(
     if not access_token:
         result.error = (
             f"secrets.bitwarden.enabled is true but {access_token_env} is "
-            "not set.  Run `hermes secrets bitwarden setup`."
+            "not set.  Run `kinqhi secrets bitwarden setup`."
         )
         return result
 
     if not project_id:
         result.error = (
             "secrets.bitwarden.project_id is empty.  "
-            "Run `hermes secrets bitwarden setup`."
+            "Run `kinqhi secrets bitwarden setup`."
         )
         return result
 
@@ -637,7 +637,7 @@ def apply_bitwarden_secrets(
     if binary is None:
         result.error = (
             "bws binary not available and auto-install is disabled.  "
-            "Run `hermes secrets bitwarden setup` to install."
+            "Run `kinqhi secrets bitwarden setup` to install."
         )
         return result
 

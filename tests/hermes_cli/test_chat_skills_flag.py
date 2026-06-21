@@ -2,7 +2,7 @@ import sys
 
 
 def test_top_level_skills_flag_defaults_to_chat(monkeypatch):
-    import hermes_cli.main as main_mod
+    import kinqhi_cli.main as main_mod
 
     captured = {}
 
@@ -14,19 +14,19 @@ def test_top_level_skills_flag_defaults_to_chat(monkeypatch):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["hermes", "-s", "hermes-agent-dev,github-auth"],
+        ["hermes", "-s", "kinqhi-dev,github-auth"],
     )
 
     main_mod.main()
 
     assert captured == {
-        "skills": ["hermes-agent-dev,github-auth"],
+        "skills": ["kinqhi-dev,github-auth"],
         "command": None,
     }
 
 
 def test_chat_subcommand_accepts_skills_flag(monkeypatch):
-    import hermes_cli.main as main_mod
+    import kinqhi_cli.main as main_mod
 
     captured = {}
 
@@ -50,7 +50,7 @@ def test_chat_subcommand_accepts_skills_flag(monkeypatch):
 
 
 def test_chat_subcommand_accepts_image_flag(monkeypatch):
-    import hermes_cli.main as main_mod
+    import kinqhi_cli.main as main_mod
 
     captured = {}
 
@@ -74,7 +74,7 @@ def test_chat_subcommand_accepts_image_flag(monkeypatch):
 
 
 def test_continue_worktree_and_skills_flags_work_together(monkeypatch):
-    import hermes_cli.main as main_mod
+    import kinqhi_cli.main as main_mod
 
     captured = {}
 
@@ -88,7 +88,7 @@ def test_continue_worktree_and_skills_flags_work_together(monkeypatch):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["hermes", "-c", "-w", "-s", "hermes-agent-dev"],
+        ["hermes", "-c", "-w", "-s", "kinqhi-dev"],
     )
 
     main_mod.main()
@@ -96,6 +96,6 @@ def test_continue_worktree_and_skills_flags_work_together(monkeypatch):
     assert captured == {
         "continue_last": True,
         "worktree": True,
-        "skills": ["hermes-agent-dev"],
+        "skills": ["kinqhi-dev"],
         "command": "chat",
     }

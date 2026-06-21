@@ -30,11 +30,11 @@ RUN_DURATION_S = 30
 WT = str(Path(__file__).resolve().parents[2])
 
 
-def worker_loop(worker_id: int, hermes_home: str, result_file: str) -> None:
-    os.environ["HERMES_HOME"] = hermes_home
-    os.environ["HOME"] = hermes_home
+def worker_loop(worker_id: int, kinqhi_home: str, result_file: str) -> None:
+    os.environ["KINQHI_HOME"] = kinqhi_home
+    os.environ["HOME"] = kinqhi_home
     sys.path.insert(0, WT)
-    from hermes_cli import kanban_db as kb
+    from kinqhi_cli import kanban_db as kb
 
     events = []
     start = time.monotonic()
@@ -141,12 +141,12 @@ def worker_loop(worker_id: int, hermes_home: str, result_file: str) -> None:
         json.dump(events, f)
 
 
-def reclaimer_loop(hermes_home: str, result_file: str) -> None:
+def reclaimer_loop(kinqhi_home: str, result_file: str) -> None:
     """Background dispatcher-like loop that reclaims stale tasks."""
-    os.environ["HERMES_HOME"] = hermes_home
-    os.environ["HOME"] = hermes_home
+    os.environ["KINQHI_HOME"] = kinqhi_home
+    os.environ["HOME"] = kinqhi_home
     sys.path.insert(0, WT)
-    from hermes_cli import kanban_db as kb
+    from kinqhi_cli import kanban_db as kb
 
     events = []
     start = time.monotonic()
@@ -171,12 +171,12 @@ def reclaimer_loop(hermes_home: str, result_file: str) -> None:
 
 def main():
     home = tempfile.mkdtemp(prefix="hermes_mixed_stress_")
-    print(f"HERMES_HOME = {home}")
+    print(f"KINQHI_HOME = {home}")
 
-    os.environ["HERMES_HOME"] = home
+    os.environ["KINQHI_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
-    from hermes_cli import kanban_db as kb
+    from kinqhi_cli import kanban_db as kb
 
     kb.init_db()
     conn = kb.connect()

@@ -1,1 +1,1 @@
-# Hermes plugins package
+# Kinqhi plugins package

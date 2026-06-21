@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import kanban_db as kb
+from kinqhi_cli import kanban_db as kb
 from agent.image_routing import (
     build_native_content_parts,
     extract_image_refs,
@@ -36,10 +36,10 @@ _PNG = base64.b64decode(
 
 @pytest.fixture
 def kanban_home(tmp_path: Path, monkeypatch):
-    """Isolated HERMES_HOME with a fresh kanban DB for each test."""
+    """Isolated KINQHI_HOME with a fresh kanban DB for each test."""
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("KINQHI_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home

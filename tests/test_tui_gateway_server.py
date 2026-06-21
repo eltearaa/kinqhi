@@ -9,8 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-from hermes_cli.active_sessions import active_session_registry_snapshot
+from kinqhi_constants import reset_kinqhi_home_override, set_kinqhi_home_override
+from kinqhi_cli.active_sessions import active_session_registry_snapshot
 from tui_gateway import server
 
 
@@ -18,7 +18,7 @@ def test_session_create_rejects_at_active_session_limit(monkeypatch, tmp_path):
     home = tmp_path / ".hermes"
     home.mkdir()
     (home / "config.yaml").write_text("max_concurrent_sessions: 1\n", encoding="utf-8")
-    token = set_hermes_home_override(home)
+    token = set_kinqhi_home_override(home)
 
     def _clear_server_sessions():
         for session in list(server._sessions.values()):
@@ -39,7 +39,7 @@ def test_session_create_rejects_at_active_session_limit(monkeypatch, tmp_path):
 
         second = server._methods["session.create"]("r2", {"cols": 80})
         assert second["error"]["message"] == (
-            "Hermes is at the active session limit (1/1). "
+            "Kinqhi is at the active session limit (1/1). "
             "Try again when another session finishes."
         )
         assert list(server._sessions) == [sid]
@@ -55,7 +55,7 @@ def test_session_create_rejects_at_active_session_limit(monkeypatch, tmp_path):
         server._cfg_cache = None
         server._cfg_mtime = None
         server._cfg_path = None
-        reset_hermes_home_override(token)
+        reset_kinqhi_home_override(token)
 
 
 def test_session_context_uses_session_cwd(monkeypatch, tmp_path):
@@ -413,12 +413,12 @@ def test_voice_toggle_returns_configured_record_key(monkeypatch):
             check_voice_requirements=lambda: {"available": True, "details": ""}
         ),
     )
-    # ``voice.toggle`` action=on mutates ``os.environ["HERMES_VOICE"]``
+    # ``voice.toggle`` action=on mutates ``os.environ["KINQHI_VOICE"]``
     # directly (CLI parity, runtime-only flag). Take monkeypatch
     # ownership of the var so the change is reverted at teardown and
     # later tests don't inherit a stale ON state (Copilot round-5
     # review on #19835).
-    monkeypatch.setenv("HERMES_VOICE", "0")
+    monkeypatch.setenv("KINQHI_VOICE", "0")
 
     on_resp = server.dispatch(
         {"id": "voice-on", "method": "voice.toggle", "params": {"action": "on"}}
@@ -500,12 +500,12 @@ def test_voice_record_start_handles_non_dict_voice_cfg(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.voice",
+        "kinqhi_cli.voice",
         types.SimpleNamespace(
             start_continuous=fake_start_continuous, stop_continuous=lambda: None
         ),
     )
-    monkeypatch.setenv("HERMES_VOICE", "1")
+    monkeypatch.setenv("KINQHI_VOICE", "1")
 
     for bad in (True, "cmd+b", None, 42, ["ctrl+b"], {"silence_threshold": "loud"}):
         captured.clear()
@@ -565,7 +565,7 @@ def test_voice_record_stop_forces_transcription(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.voice",
+        "kinqhi_cli.voice",
         types.SimpleNamespace(
             start_continuous=lambda **_kwargs: None,
             stop_continuous=fake_stop_continuous,
@@ -587,7 +587,7 @@ def test_voice_record_stop_forces_transcription(monkeypatch):
 def test_voice_record_stop_updates_event_session_id(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.voice",
+        "kinqhi_cli.voice",
         types.SimpleNamespace(
             start_continuous=lambda **_kwargs: True,
             stop_continuous=lambda **_kwargs: None,
@@ -610,13 +610,13 @@ def test_voice_record_stop_updates_event_session_id(monkeypatch):
 def test_voice_record_start_reports_busy_when_stop_is_in_progress(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.voice",
+        "kinqhi_cli.voice",
         types.SimpleNamespace(
             start_continuous=lambda **_kwargs: False,
             stop_continuous=lambda **_kwargs: None,
         ),
     )
-    monkeypatch.setenv("HERMES_VOICE", "1")
+    monkeypatch.setenv("KINQHI_VOICE", "1")
     monkeypatch.setattr(server, "_load_cfg", lambda: {"voice": {}})
 
     resp = server.dispatch(
@@ -651,8 +651,8 @@ def test_voice_toggle_tts_branch_also_carries_record_key(monkeypatch):
             check_voice_requirements=lambda: {"available": True, "details": ""}
         ),
     )
-    monkeypatch.setenv("HERMES_VOICE", "1")
-    monkeypatch.delenv("HERMES_VOICE_TTS", raising=False)
+    monkeypatch.setenv("KINQHI_VOICE", "1")
+    monkeypatch.delenv("KINQHI_VOICE_TTS", raising=False)
 
     tts_resp = server.dispatch(
         {"id": "voice-tts", "method": "voice.toggle", "params": {"action": "tts"}}
@@ -663,16 +663,16 @@ def test_voice_toggle_tts_branch_also_carries_record_key(monkeypatch):
 
 
 def test_load_enabled_toolsets_prefers_tui_env(monkeypatch):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "web, terminal, ,memory")
+    monkeypatch.setenv("KINQHI_TUI_TOOLSETS", "web, terminal, ,memory")
 
     assert server._load_enabled_toolsets() == ["web", "terminal", "memory"]
 
 
 def test_load_enabled_toolsets_filters_invalid_tui_env(monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "web, nope")
+    monkeypatch.setenv("KINQHI_TUI_TOOLSETS", "web, nope")
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "kinqhi_cli.plugins",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
@@ -681,7 +681,7 @@ def test_load_enabled_toolsets_filters_invalid_tui_env(monkeypatch, capsys):
 
 
 def test_load_enabled_toolsets_accepts_plugin_env_after_discovery(monkeypatch):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "plugin_demo")
+    monkeypatch.setenv("KINQHI_TUI_TOOLSETS", "plugin_demo")
 
     import toolsets
 
@@ -694,7 +694,7 @@ def test_load_enabled_toolsets_accepts_plugin_env_after_discovery(monkeypatch):
     monkeypatch.setattr(toolsets, "validate_toolset", fake_validate)
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "kinqhi_cli.plugins",
         types.SimpleNamespace(
             discover_plugins=lambda: discovered.update({"ready": True})
         ),
@@ -704,14 +704,14 @@ def test_load_enabled_toolsets_accepts_plugin_env_after_discovery(monkeypatch):
 
 
 def test_load_enabled_toolsets_rejects_disabled_mcp_env(monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "mcp-off")
+    monkeypatch.setenv("KINQHI_TUI_TOOLSETS", "mcp-off")
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "kinqhi_cli.plugins",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
-    import hermes_cli.config as config_mod
+    import kinqhi_cli.config as config_mod
 
     monkeypatch.setattr(
         config_mod,
@@ -724,7 +724,7 @@ def test_load_enabled_toolsets_rejects_disabled_mcp_env(monkeypatch, capsys):
 
     # Sorted: ["kanban", "memory"]. `kanban` is auto-recovered by
     # _get_platform_tools because it's a non-configurable platform toolset
-    # whose tools live in hermes-cli's universe (see toolsets.py).
+    # whose tools live in kinqhi-cli's universe (see toolsets.py).
     assert server._load_enabled_toolsets() == ["kanban", "memory"]
     err = capsys.readouterr().err
     assert "ignoring disabled MCP servers" in err
@@ -733,14 +733,14 @@ def test_load_enabled_toolsets_rejects_disabled_mcp_env(monkeypatch, capsys):
 
 
 def test_load_enabled_toolsets_falls_back_when_tui_env_invalid(monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "nope")
+    monkeypatch.setenv("KINQHI_TUI_TOOLSETS", "nope")
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "kinqhi_cli.plugins",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
-    import hermes_cli.config as config_mod
+    import kinqhi_cli.config as config_mod
 
     monkeypatch.setattr(
         config_mod, "load_config", lambda: {"platform_toolsets": {"cli": ["memory"]}}
@@ -751,14 +751,14 @@ def test_load_enabled_toolsets_falls_back_when_tui_env_invalid(monkeypatch, caps
 
 
 def test_load_enabled_toolsets_warns_when_config_fallback_fails(monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "nope")
+    monkeypatch.setenv("KINQHI_TUI_TOOLSETS", "nope")
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "kinqhi_cli.plugins",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
-    import hermes_cli.config as config_mod
+    import kinqhi_cli.config as config_mod
 
     monkeypatch.setattr(
         config_mod, "load_config", lambda: (_ for _ in ()).throw(RuntimeError("boom"))
@@ -769,9 +769,9 @@ def test_load_enabled_toolsets_warns_when_config_fallback_fails(monkeypatch, cap
 
 
 def test_load_enabled_toolsets_honors_builtin_env_if_config_fails(monkeypatch):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "web")
+    monkeypatch.setenv("KINQHI_TUI_TOOLSETS", "web")
 
-    import hermes_cli.config as config_mod
+    import kinqhi_cli.config as config_mod
 
     monkeypatch.setattr(
         config_mod, "load_config", lambda: (_ for _ in ()).throw(RuntimeError("boom"))
@@ -781,7 +781,7 @@ def test_load_enabled_toolsets_honors_builtin_env_if_config_fails(monkeypatch):
 
 
 def test_load_enabled_toolsets_all_env_means_all(monkeypatch):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "all")
+    monkeypatch.setenv("KINQHI_TUI_TOOLSETS", "all")
 
     assert server._load_enabled_toolsets() is None
 
@@ -789,21 +789,21 @@ def test_load_enabled_toolsets_all_env_means_all(monkeypatch):
 def test_load_enabled_toolsets_all_env_warns_about_ignored_extra_entries(
     monkeypatch, capsys
 ):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "all,nope")
+    monkeypatch.setenv("KINQHI_TUI_TOOLSETS", "all,nope")
 
     assert server._load_enabled_toolsets() is None
     assert "ignoring additional entries: nope" in capsys.readouterr().err
 
 
 def test_load_enabled_toolsets_reports_disabled_mcp_separately(monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "web,mcp-off,nope")
+    monkeypatch.setenv("KINQHI_TUI_TOOLSETS", "web,mcp-off,nope")
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "kinqhi_cli.plugins",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
 
-    import hermes_cli.config as config_mod
+    import kinqhi_cli.config as config_mod
 
     monkeypatch.setattr(
         config_mod,
@@ -813,7 +813,7 @@ def test_load_enabled_toolsets_reports_disabled_mcp_separately(monkeypatch, caps
 
     assert server._load_enabled_toolsets() == ["web"]
     err = capsys.readouterr().err
-    assert "ignoring unknown HERMES_TUI_TOOLSETS entries: nope" in err
+    assert "ignoring unknown KINQHI_TUI_TOOLSETS entries: nope" in err
     assert "ignoring disabled MCP servers" in err
     assert "mcp-off" in err
 
@@ -964,7 +964,7 @@ def test_session_resume_follows_compression_tip(monkeypatch, tmp_path):
     the response generated after compression. session.resume must follow the
     compression tip via resolve_resume_session_id.
     """
-    from hermes_state import SessionDB
+    from kinqhi_state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     base = int(time.time()) - 10_000
@@ -1116,7 +1116,7 @@ def test_session_resume_profile_uses_profile_db_cwd(monkeypatch, tmp_path):
 
     monkeypatch.setenv("TERMINAL_CWD", str(launch_cwd))
     monkeypatch.setattr(server, "_profile_home", lambda _profile: profile_home)
-    monkeypatch.setattr("hermes_state.SessionDB", lambda db_path=None: profile_db)
+    monkeypatch.setattr("kinqhi_state.SessionDB", lambda db_path=None: profile_db)
     monkeypatch.setattr(server, "_get_db", lambda: launch_db)
     monkeypatch.setattr(server, "_enable_gateway_prompts", lambda: None)
     monkeypatch.setattr(server, "_set_session_context", lambda target: [])
@@ -1178,7 +1178,7 @@ def test_session_cwd_set_profile_session_updates_profile_db(monkeypatch, tmp_pat
 
     import tools.terminal_tool as terminal_tool
 
-    monkeypatch.setattr("hermes_state.SessionDB", lambda db_path=None: profile_db)
+    monkeypatch.setattr("kinqhi_state.SessionDB", lambda db_path=None: profile_db)
     monkeypatch.setattr(server, "_get_db", lambda: LaunchDB())
     monkeypatch.setattr(terminal_tool, "cleanup_vm", lambda _key: None)
     monkeypatch.setattr(server, "_register_session_cwd", lambda _session: None)
@@ -1285,15 +1285,15 @@ def test_status_callback_accepts_single_message_argument():
 
 
 def test_resolve_model_uses_inference_model_env(monkeypatch):
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.setenv("HERMES_INFERENCE_MODEL", " anthropic/claude-sonnet-4.6\n")
+    monkeypatch.delenv("KINQHI_MODEL", raising=False)
+    monkeypatch.setenv("KINQHI_INFERENCE_MODEL", " anthropic/claude-sonnet-4.6\n")
 
     assert server._resolve_model() == "anthropic/claude-sonnet-4.6"
 
 
 def test_resolve_model_strips_config_model(monkeypatch):
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
+    monkeypatch.delenv("KINQHI_MODEL", raising=False)
+    monkeypatch.delenv("KINQHI_INFERENCE_MODEL", raising=False)
     monkeypatch.setattr(
         server, "_load_cfg", lambda: {"model": {"default": " nous/hermes-test "}}
     )
@@ -1311,8 +1311,8 @@ def _sync_test_session(**extra):
 
 
 def _patch_config_model(monkeypatch, model, provider=""):
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
+    monkeypatch.delenv("KINQHI_MODEL", raising=False)
+    monkeypatch.delenv("KINQHI_INFERENCE_MODEL", raising=False)
     cfg_model = {"default": model}
     if provider:
         cfg_model["provider"] = provider
@@ -1436,10 +1436,10 @@ def test_config_sync_failure_emits_error_once_per_edit(monkeypatch):
 
 
 def test_config_sync_config_wins_over_env_seed(monkeypatch):
-    # Hosted instances set HERMES_INFERENCE_MODEL as a provision-time seed;
+    # Hosted instances set KINQHI_INFERENCE_MODEL as a provision-time seed;
     # the per-turn sync must follow config.yaml edits, not stay pinned to it.
-    monkeypatch.setenv("HERMES_INFERENCE_MODEL", "seed/model")
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
+    monkeypatch.setenv("KINQHI_INFERENCE_MODEL", "seed/model")
+    monkeypatch.delenv("KINQHI_MODEL", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"default": "new/model"}})
     session = _sync_test_session(config_model_seen=("seed/model", ""))
     calls = []
@@ -1456,19 +1456,19 @@ def test_config_sync_config_wins_over_env_seed(monkeypatch):
 
 
 def test_startup_runtime_uses_tui_provider_env(monkeypatch):
-    monkeypatch.setenv("HERMES_MODEL", "nous/hermes-test")
-    monkeypatch.setenv("HERMES_TUI_PROVIDER", "nous")
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.setenv("KINQHI_MODEL", "nous/hermes-test")
+    monkeypatch.setenv("KINQHI_TUI_PROVIDER", "nous")
+    monkeypatch.delenv("KINQHI_INFERENCE_PROVIDER", raising=False)
 
     assert server._resolve_startup_runtime() == ("nous/hermes-test", "nous")
 
 
 def test_startup_runtime_does_not_treat_inference_provider_as_explicit(monkeypatch):
-    monkeypatch.setenv("HERMES_MODEL", "nous/hermes-test")
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
-    monkeypatch.setenv("HERMES_INFERENCE_PROVIDER", "nous")
+    monkeypatch.setenv("KINQHI_MODEL", "nous/hermes-test")
+    monkeypatch.delenv("KINQHI_TUI_PROVIDER", raising=False)
+    monkeypatch.setenv("KINQHI_INFERENCE_PROVIDER", "nous")
     monkeypatch.setattr(
-        "hermes_cli.models.detect_static_provider_for_model",
+        "kinqhi_cli.models.detect_static_provider_for_model",
         lambda model, provider: None,
     )
 
@@ -1476,9 +1476,9 @@ def test_startup_runtime_does_not_treat_inference_provider_as_explicit(monkeypat
 
 
 def test_startup_runtime_detects_provider_for_model_env(monkeypatch):
-    monkeypatch.setenv("HERMES_MODEL", "sonnet")
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.setenv("KINQHI_MODEL", "sonnet")
+    monkeypatch.delenv("KINQHI_TUI_PROVIDER", raising=False)
+    monkeypatch.delenv("KINQHI_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "auto"}})
 
     def fake_detect(model, current_provider):
@@ -1487,7 +1487,7 @@ def test_startup_runtime_detects_provider_for_model_env(monkeypatch):
         return "anthropic", "anthropic/claude-sonnet-4.6"
 
     monkeypatch.setattr(
-        "hermes_cli.models.detect_static_provider_for_model", fake_detect
+        "kinqhi_cli.models.detect_static_provider_for_model", fake_detect
     )
 
     assert server._resolve_startup_runtime() == (
@@ -1497,7 +1497,7 @@ def test_startup_runtime_detects_provider_for_model_env(monkeypatch):
 
 
 def test_load_fallback_model_merges_chain_providers_first(monkeypatch):
-    # Parity with HermesCLI / gateway: fallback_providers stays first and keeps
+    # Parity with KinqhiCLI / gateway: fallback_providers stays first and keeps
     # its order, with any distinct legacy fallback_model entry merged in after
     # (deduped on provider/model/base_url).
     fallback_chain = [
@@ -1530,9 +1530,9 @@ def test_make_agent_passes_configured_fallback_chain(monkeypatch):
         captured.update(kwargs)
         return types.SimpleNamespace(model=kwargs.get("model"))
 
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
+    monkeypatch.delenv("KINQHI_MODEL", raising=False)
+    monkeypatch.delenv("KINQHI_INFERENCE_MODEL", raising=False)
+    monkeypatch.delenv("KINQHI_TUI_PROVIDER", raising=False)
     monkeypatch.setattr(
         server,
         "_load_cfg",
@@ -1542,7 +1542,7 @@ def test_make_agent_passes_configured_fallback_chain(monkeypatch):
         },
     )
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "kinqhi_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, target_model=None: {
             "provider": "openai-codex",
             "base_url": "https://chatgpt.com/backend-api/codex",
@@ -1606,12 +1606,12 @@ def test_background_agent_kwargs_preserves_empty_fallback_chain(monkeypatch):
 
 
 def test_startup_runtime_resolves_short_alias_without_network(monkeypatch):
-    monkeypatch.setenv("HERMES_MODEL", "sonnet")
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.setenv("KINQHI_MODEL", "sonnet")
+    monkeypatch.delenv("KINQHI_TUI_PROVIDER", raising=False)
+    monkeypatch.delenv("KINQHI_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "auto"}})
     monkeypatch.setattr(
-        "hermes_cli.models.fetch_openrouter_models",
+        "kinqhi_cli.models.fetch_openrouter_models",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("network lookup should not run")
         ),
@@ -1624,12 +1624,12 @@ def test_startup_runtime_resolves_short_alias_without_network(monkeypatch):
 
 
 def test_startup_runtime_does_not_call_network_detector(monkeypatch):
-    monkeypatch.setenv("HERMES_MODEL", "sonnet")
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.setenv("KINQHI_MODEL", "sonnet")
+    monkeypatch.delenv("KINQHI_TUI_PROVIDER", raising=False)
+    monkeypatch.delenv("KINQHI_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "auto"}})
     monkeypatch.setattr(
-        "hermes_cli.models.detect_provider_for_model",
+        "kinqhi_cli.models.detect_provider_for_model",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("network detector called")
         ),
@@ -2429,7 +2429,7 @@ def test_config_set_yolo_global_scope_writes_approvals_mode(tmp_path, monkeypatc
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"approvals": {"mode": "manual"}}))
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
 
     resp_on = server.handle_request(
         {
@@ -2459,7 +2459,7 @@ def test_config_set_yolo_global_scope_honors_explicit_value(tmp_path, monkeypatc
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"approvals": {"mode": "manual"}}))
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -2499,7 +2499,7 @@ def test_config_set_fast_updates_live_agent_and_config(monkeypatch):
     monkeypatch.setattr(server, "_session_info", lambda _agent, *a: {"model": "x"})
     monkeypatch.setattr(server, "_emit", lambda *args: emits.append(args))
     monkeypatch.setattr(
-        "hermes_cli.models.resolve_fast_mode_overrides",
+        "kinqhi_cli.models.resolve_fast_mode_overrides",
         lambda _model_id: {"service_tier": "priority"},
     )
 
@@ -2574,7 +2574,7 @@ def test_config_set_fast_rejects_unsupported_model(monkeypatch):
         server, "_write_config_key", lambda path, value: writes.append((path, value))
     )
     monkeypatch.setattr(
-        "hermes_cli.models.resolve_fast_mode_overrides",
+        "kinqhi_cli.models.resolve_fast_mode_overrides",
         lambda _model_id: None,
     )
 
@@ -2654,7 +2654,7 @@ def test_config_busy_get_and_set(monkeypatch):
 
 
 def test_config_set_yolo_process_scope_treats_false_like_env_as_disabled(monkeypatch):
-    monkeypatch.setenv("HERMES_YOLO_MODE", "false")
+    monkeypatch.setenv("KINQHI_YOLO_MODE", "false")
 
     resp = server.handle_request(
         {
@@ -2665,7 +2665,7 @@ def test_config_set_yolo_process_scope_treats_false_like_env_as_disabled(monkeyp
     )
 
     assert resp["result"]["value"] == "1"
-    assert os.environ.get("HERMES_YOLO_MODE") == "1"
+    assert os.environ.get("KINQHI_YOLO_MODE") == "1"
 
 
 def test_config_get_statusbar_survives_non_dict_display(monkeypatch):
@@ -2693,7 +2693,7 @@ def test_config_set_statusbar_survives_non_dict_display(tmp_path, monkeypatch):
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"display": "broken"}))
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -2717,7 +2717,7 @@ def test_config_set_details_mode_pins_all_sections(tmp_path, monkeypatch):
             {"display": {"sections": {"tools": "expanded", "activity": "hidden"}}}
         )
     )
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -2742,7 +2742,7 @@ def test_config_set_section_writes_per_section_override(tmp_path, monkeypatch):
     import yaml
 
     cfg_path = tmp_path / "config.yaml"
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -2766,7 +2766,7 @@ def test_config_set_section_clears_override_on_empty_value(tmp_path, monkeypatch
             {"display": {"sections": {"activity": "hidden", "tools": "expanded"}}}
         )
     )
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -2782,7 +2782,7 @@ def test_config_set_section_clears_override_on_empty_value(tmp_path, monkeypatch
 
 
 def test_config_set_section_rejects_unknown_section_or_mode(tmp_path, monkeypatch):
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
 
     bad_section = server.handle_request(
         {
@@ -2883,19 +2883,19 @@ def test_config_mouse_accepts_preset_strings_and_aliases(monkeypatch):
 
 
 def test_enable_gateway_prompts_sets_gateway_env(monkeypatch):
-    monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
-    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("KINQHI_EXEC_ASK", raising=False)
+    monkeypatch.delenv("KINQHI_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("KINQHI_INTERACTIVE", raising=False)
 
     server._enable_gateway_prompts()
 
-    assert server.os.environ["HERMES_GATEWAY_SESSION"] == "1"
-    assert server.os.environ["HERMES_EXEC_ASK"] == "1"
-    assert server.os.environ["HERMES_INTERACTIVE"] == "1"
+    assert server.os.environ["KINQHI_GATEWAY_SESSION"] == "1"
+    assert server.os.environ["KINQHI_EXEC_ASK"] == "1"
+    assert server.os.environ["KINQHI_INTERACTIVE"] == "1"
 
 
 def test_setup_status_reports_provider_config(monkeypatch):
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda: False)
+    monkeypatch.setattr("kinqhi_cli.main._has_any_provider_configured", lambda: False)
 
     resp = server.handle_request({"id": "1", "method": "setup.status", "params": {}})
 
@@ -2903,9 +2903,9 @@ def test_setup_status_reports_provider_config(monkeypatch):
 
 
 def test_setup_runtime_check_rejects_empty_runtime_key(monkeypatch):
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda: True)
+    monkeypatch.setattr("kinqhi_cli.main._has_any_provider_configured", lambda: True)
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "kinqhi_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None: {
             "provider": "openrouter",
             "api_key": "",
@@ -2920,9 +2920,9 @@ def test_setup_runtime_check_rejects_empty_runtime_key(monkeypatch):
 
 
 def test_setup_runtime_check_allows_no_key_custom_runtime(monkeypatch):
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda: True)
+    monkeypatch.setattr("kinqhi_cli.main._has_any_provider_configured", lambda: True)
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "kinqhi_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None: {
             "provider": "custom",
             "api_key": "no-key-required",
@@ -2937,9 +2937,9 @@ def test_setup_runtime_check_allows_no_key_custom_runtime(monkeypatch):
 
 
 def test_setup_runtime_check_rejects_implicit_bedrock_when_unconfigured(monkeypatch):
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda: False)
+    monkeypatch.setattr("kinqhi_cli.main._has_any_provider_configured", lambda: False)
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "kinqhi_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None: {
             "provider": "bedrock",
             "api_key": "aws-sdk",
@@ -3028,7 +3028,7 @@ def test_complete_slash_details_args():
 
 
 def test_config_set_reasoning_updates_live_session_and_agent(tmp_path, monkeypatch):
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
     agent = types.SimpleNamespace(reasoning_config=None)
     server._sessions["sid"] = _session(agent=agent)
 
@@ -3066,7 +3066,7 @@ def test_config_set_reasoning_updates_live_session_and_agent(tmp_path, monkeypat
 
 
 def test_config_set_verbose_updates_session_mode_and_agent(tmp_path, monkeypatch):
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
     agent = types.SimpleNamespace(verbose_logging=False)
     server._sessions["sid"] = _session(agent=agent)
 
@@ -3176,7 +3176,7 @@ def test_config_set_model_requires_confirmation_for_expensive_model(monkeypatch)
     agent = _Agent()
     server._sessions["sid"] = _session(agent=agent)
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model", lambda **_kwargs: result
+        "kinqhi_cli.model_switch.switch_model", lambda **_kwargs: result
     )
     monkeypatch.setattr(server, "_restart_slash_worker", lambda sid, session: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
@@ -3242,10 +3242,10 @@ def test_config_set_model_global_persists(monkeypatch):
         return result
 
     server._sessions["sid"] = _session(agent=_Agent())
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", _switch_model)
+    monkeypatch.setattr("kinqhi_cli.model_switch.switch_model", _switch_model)
     monkeypatch.setattr(server, "_restart_slash_worker", lambda sid, session: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
-    monkeypatch.setattr("hermes_cli.config.save_config", lambda cfg: saved.update(cfg))
+    monkeypatch.setattr("kinqhi_cli.config.save_config", lambda cfg: saved.update(cfg))
 
     resp = server.handle_request(
         {
@@ -3289,7 +3289,7 @@ def test_config_set_model_explicit_provider_skips_broken_default_init(monkeypatc
             }
         raise RuntimeError(f"unexpected provider {requested}")
 
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
+    monkeypatch.setattr("kinqhi_cli.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
 
     try:
         resp = server.handle_request(
@@ -3330,7 +3330,7 @@ def test_config_set_model_explicit_provider_surfaces_selected_provider_errors(mo
             raise RuntimeError("missing anthropic API key")
         raise RuntimeError(f"unexpected provider {requested}")
 
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
+    monkeypatch.setattr("kinqhi_cli.runtime_provider.resolve_runtime_provider", fake_runtime_provider)
 
     try:
         resp = server.handle_request(
@@ -3357,7 +3357,7 @@ def test_config_set_model_explicit_provider_surfaces_selected_provider_errors(mo
 def test_config_set_model_does_not_leak_inference_provider_env(monkeypatch):
     """A /model switch must NOT mutate process-global env vars. The desktop /
     dashboard tui_gateway backend hosts every same-profile session in one
-    process; writing HERMES_INFERENCE_PROVIDER on a switch leaked the new
+    process; writing KINQHI_INFERENCE_PROVIDER on a switch leaked the new
     provider into every other live session's next agent rebuild. The switch
     must instead record a per-session override and leave shared env untouched.
 
@@ -3386,9 +3386,9 @@ def test_config_set_model_does_not_leak_inference_provider_env(monkeypatch):
 
     session = _session(agent=_Agent())
     server._sessions["sid"] = session
-    monkeypatch.setenv("HERMES_INFERENCE_PROVIDER", "openrouter")
+    monkeypatch.setenv("KINQHI_INFERENCE_PROVIDER", "openrouter")
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model", lambda **_kwargs: result
+        "kinqhi_cli.model_switch.switch_model", lambda **_kwargs: result
     )
     monkeypatch.setattr(server, "_restart_slash_worker", lambda sid, session: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
@@ -3407,7 +3407,7 @@ def test_config_set_model_does_not_leak_inference_provider_env(monkeypatch):
         )
 
         # Shared process env is UNCHANGED (the contamination vector is gone).
-        assert os.environ["HERMES_INFERENCE_PROVIDER"] == "openrouter"
+        assert os.environ["KINQHI_INFERENCE_PROVIDER"] == "openrouter"
         # The switch was recorded as a per-session override instead.
         assert session["model_override"]["provider"] == "anthropic"
         assert session["model_override"]["model"] == "claude-sonnet-4.6"
@@ -3446,10 +3446,10 @@ def test_config_set_model_records_per_session_override_not_env(monkeypatch):
 
     session = _session(agent=_Agent())
     server._sessions["sid"] = session
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.delenv("KINQHI_TUI_PROVIDER", raising=False)
+    monkeypatch.delenv("KINQHI_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model", lambda **_kwargs: result
+        "kinqhi_cli.model_switch.switch_model", lambda **_kwargs: result
     )
     monkeypatch.setattr(server, "_restart_slash_worker", lambda sid, session: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
@@ -3468,8 +3468,8 @@ def test_config_set_model_records_per_session_override_not_env(monkeypatch):
         )
 
         # No process-global env mutation.
-        assert "HERMES_TUI_PROVIDER" not in os.environ
-        assert "HERMES_INFERENCE_PROVIDER" not in os.environ
+        assert "KINQHI_TUI_PROVIDER" not in os.environ
+        assert "KINQHI_INFERENCE_PROVIDER" not in os.environ
         # The user's explicit provider + resolved endpoint live on the session,
         # carried into the next /new rebuild by _make_agent.
         override = session["model_override"]
@@ -3484,7 +3484,7 @@ def test_config_set_model_records_per_session_override_not_env(monkeypatch):
 
 def test_config_set_model_switches_agent_without_touching_env(monkeypatch):
     """A /model switch mutates the target session's agent in place and records
-    a per-session override; it does NOT write HERMES_MODEL / HERMES_TUI_PROVIDER
+    a per-session override; it does NOT write KINQHI_MODEL / KINQHI_TUI_PROVIDER
     etc. into the shared process environment.
 
     (Was test_config_set_model_syncs_tui_provider_env.)
@@ -3530,9 +3530,9 @@ def test_config_set_model_switches_agent_without_touching_env(monkeypatch):
     agent._session_db = db
     session = _session(agent=agent)
     server._sessions["sid"] = session
-    monkeypatch.setenv("HERMES_TUI_PROVIDER", "openai-codex")
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
+    monkeypatch.setenv("KINQHI_TUI_PROVIDER", "openai-codex")
+    monkeypatch.delenv("KINQHI_MODEL", raising=False)
+    monkeypatch.delenv("KINQHI_INFERENCE_MODEL", raising=False)
     monkeypatch.setattr(server, "_restart_slash_worker", lambda sid, session: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
 
@@ -3547,7 +3547,7 @@ def test_config_set_model_switches_agent_without_touching_env(monkeypatch):
             warning_message="",
         )
 
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", fake_switch_model)
+    monkeypatch.setattr("kinqhi_cli.model_switch.switch_model", fake_switch_model)
 
     try:
         resp = server.handle_request(
@@ -3585,9 +3585,9 @@ def test_config_set_model_switches_agent_without_touching_env(monkeypatch):
             "content": session["history"][-1]["content"],
         }
         # ...and the shared process env was NOT touched.
-        assert os.environ["HERMES_TUI_PROVIDER"] == "openai-codex"
-        assert "HERMES_MODEL" not in os.environ
-        assert "HERMES_INFERENCE_MODEL" not in os.environ
+        assert os.environ["KINQHI_TUI_PROVIDER"] == "openai-codex"
+        assert "KINQHI_MODEL" not in os.environ
+        assert "KINQHI_INFERENCE_MODEL" not in os.environ
     finally:
         server._sessions.clear()
 
@@ -3684,7 +3684,7 @@ def test_session_compress_syncs_session_key_after_rotation(monkeypatch):
     """When AIAgent._compress_context rotates session_id (compression split),
     the gateway session_key must follow so subsequent approval routing,
     DB title/history lookups, and slash worker resume target the new
-    continuation session — mirrors HermesCLI._manual_compress's
+    continuation session — mirrors KinqhiCLI._manual_compress's
     session_id sync (cli.py).
     """
     agent = types.SimpleNamespace(session_id="rotated-id")
@@ -4133,7 +4133,7 @@ def test_session_status_reads_live_gateway_agent(monkeypatch):
         server._sessions.pop("sid", None)
 
     out = resp["result"]["output"]
-    assert "Hermes TUI Status" in out
+    assert "Kinqhi TUI Status" in out
     assert "Session ID: session-key" in out
     assert "Title: Live TUI" in out
     assert "Model: live-model (live-provider)" in out
@@ -4222,7 +4222,7 @@ def test_command_dispatch_exec_nonzero_surfaces_error(monkeypatch):
 
 
 def test_plugins_list_surfaces_loader_error(monkeypatch):
-    with patch("hermes_cli.plugins.get_plugin_manager", side_effect=Exception("boom")):
+    with patch("kinqhi_cli.plugins.get_plugin_manager", side_effect=Exception("boom")):
         resp = server.handle_request(
             {"id": "1", "method": "plugins.list", "params": {}}
         )
@@ -4233,7 +4233,7 @@ def test_plugins_list_surfaces_loader_error(monkeypatch):
 
 def test_complete_slash_surfaces_completer_error(monkeypatch):
     with patch(
-        "hermes_cli.commands.SlashCommandCompleter",
+        "kinqhi_cli.commands.SlashCommandCompleter",
         side_effect=Exception("no completer"),
     ):
         resp = server.handle_request(
@@ -5215,14 +5215,14 @@ def test_session_create_no_race_keeps_worker_alive(monkeypatch):
 
 
 def test_get_db_degrades_cleanly_when_sessiondb_init_fails(monkeypatch):
-    fake_mod = types.ModuleType("hermes_state")
+    fake_mod = types.ModuleType("kinqhi_state")
 
     class _BrokenSessionDB:
         def __init__(self):
             raise RuntimeError("locking protocol")
 
     fake_mod.SessionDB = _BrokenSessionDB
-    monkeypatch.setitem(sys.modules, "hermes_state", fake_mod)
+    monkeypatch.setitem(sys.modules, "kinqhi_state", fake_mod)
     monkeypatch.setattr(server, "_db", None)
     monkeypatch.setattr(server, "_db_error", None)
 
@@ -5453,21 +5453,21 @@ def test_session_delete_success_returns_deleted_id(monkeypatch):
     assert resp["result"] == {"deleted": "old-1"}
     assert captured["sid"] == "old-1"
     # sessions_dir must be forwarded so transcript files get cleaned up
-    # too — not just the SQLite row.  The autouse _isolate_hermes_home
-    # fixture pins HERMES_HOME to a temp dir; the handler should append
+    # too — not just the SQLite row.  The autouse _isolate_kinqhi_home
+    # fixture pins KINQHI_HOME to a temp dir; the handler should append
     # /sessions to it.
     assert captured["sessions_dir"] is not None
     assert str(captured["sessions_dir"]).endswith("sessions")
 
 
 # --------------------------------------------------------------------------
-# model.options — curated-list parity with `hermes model` and classic /model
+# model.options — curated-list parity with `kinqhi model` and classic /model
 # --------------------------------------------------------------------------
 
 
 def test_model_options_does_not_overwrite_curated_models(monkeypatch):
     """The TUI model.options handler must surface the same curated model
-    list as `hermes model` and the classic CLI /model picker.
+    list as `kinqhi model` and the classic CLI /model picker.
 
     Regression: earlier versions of this handler unconditionally replaced
     each provider's curated ``models`` field with ``provider_model_ids()``
@@ -5494,13 +5494,13 @@ def test_model_options_does_not_overwrite_curated_models(monkeypatch):
     )
 
     with patch(
-        "hermes_cli.model_switch.list_authenticated_providers",
+        "kinqhi_cli.model_switch.list_authenticated_providers",
         return_value=curated_providers,
     ) as listing:
         # If provider_model_ids gets called at all, the handler is still
         # overwriting curated with live — that's the regression we're
         # guarding against.
-        with patch("hermes_cli.models.provider_model_ids") as live_fetch:
+        with patch("kinqhi_cli.models.provider_model_ids") as live_fetch:
             resp = server._methods["model.options"](99, {"session_id": ""})
 
     assert "result" in resp, resp
@@ -5527,7 +5527,7 @@ def test_model_options_propagates_list_exception(monkeypatch):
         lambda: {"providers": {}, "custom_providers": []},
     )
     with patch(
-        "hermes_cli.model_switch.list_authenticated_providers",
+        "kinqhi_cli.model_switch.list_authenticated_providers",
         side_effect=RuntimeError("catalog blew up"),
     ):
         resp = server._methods["model.options"](77, {"session_id": ""})
@@ -6117,7 +6117,7 @@ def test_browser_manage_status_falls_back_to_config_cdp_url(monkeypatch):
     fake_cfg = types.SimpleNamespace(
         read_raw_config=lambda: {"browser": {"cdp_url": "http://lan:9222"}}
     )
-    with patch.dict(sys.modules, {"hermes_cli.config": fake_cfg}):
+    with patch.dict(sys.modules, {"kinqhi_cli.config": fake_cfg}):
         resp = server.handle_request(
             {"id": "1", "method": "browser.manage", "params": {"action": "status"}}
         )
@@ -6211,10 +6211,10 @@ def test_browser_manage_connect_default_local_reports_launch_hint(monkeypatch):
         _stub_urlopen(monkeypatch, ok=False)
         with (
             patch(
-                "hermes_cli.browser_connect.try_launch_chrome_debug", return_value=False
+                "kinqhi_cli.browser_connect.try_launch_chrome_debug", return_value=False
             ),
             patch(
-                "hermes_cli.browser_connect.get_chrome_debug_candidates",
+                "kinqhi_cli.browser_connect.get_chrome_debug_candidates",
                 return_value=[],
             ),
         ):
@@ -6267,10 +6267,10 @@ def test_browser_manage_connect_no_session_skips_progress_events(monkeypatch):
         _stub_urlopen(monkeypatch, ok=False)
         with (
             patch(
-                "hermes_cli.browser_connect.try_launch_chrome_debug", return_value=False
+                "kinqhi_cli.browser_connect.try_launch_chrome_debug", return_value=False
             ),
             patch(
-                "hermes_cli.browser_connect.get_chrome_debug_candidates",
+                "kinqhi_cli.browser_connect.get_chrome_debug_candidates",
                 return_value=[],
             ),
         ):
@@ -6355,7 +6355,7 @@ def test_browser_manage_connect_default_local_retries_after_launch(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", _opener)
     with patch.dict(sys.modules, {"tools.browser_tool": fake}):
         with patch(
-            "hermes_cli.browser_connect.try_launch_chrome_debug", return_value=True
+            "kinqhi_cli.browser_connect.try_launch_chrome_debug", return_value=True
         ):
             resp = server.handle_request(
                 {"id": "1", "method": "browser.manage", "params": {"action": "connect"}}
@@ -6745,8 +6745,8 @@ def test_config_set_indicator_none_keeps_blank_repr(monkeypatch):
 # ── reload.env ───────────────────────────────────────────────────────
 
 
-def test_reload_env_rpc_calls_hermes_cli_reload_env(monkeypatch):
-    """reload.env mirrors classic CLI's `/reload` — re-reads ~/.hermes/.env
+def test_reload_env_rpc_calls_kinqhi_cli_reload_env(monkeypatch):
+    """reload.env mirrors classic CLI's `/reload` — re-reads ~/.kinqhi/.env
     into the gateway process and reports the count of vars updated."""
     calls = {"n": 0}
 
@@ -6755,7 +6755,7 @@ def test_reload_env_rpc_calls_hermes_cli_reload_env(monkeypatch):
         return 7
 
     fake = types.SimpleNamespace(reload_env=_fake_reload)
-    with patch.dict(sys.modules, {"hermes_cli.config": fake}):
+    with patch.dict(sys.modules, {"kinqhi_cli.config": fake}):
         resp = server.handle_request({"id": "1", "method": "reload.env", "params": {}})
 
     assert resp["result"] == {"updated": 7}
@@ -6767,7 +6767,7 @@ def test_reload_env_rpc_surfaces_errors(monkeypatch):
         raise RuntimeError("env path locked")
 
     fake = types.SimpleNamespace(reload_env=_broken)
-    with patch.dict(sys.modules, {"hermes_cli.config": fake}):
+    with patch.dict(sys.modules, {"kinqhi_cli.config": fake}):
         resp = server.handle_request({"id": "1", "method": "reload.env", "params": {}})
 
     assert "error" in resp
@@ -6783,7 +6783,7 @@ def _setup_make_agent_mocks(monkeypatch, cfg):
         server, "_resolve_startup_runtime", lambda: ("test-model", None)
     )
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "kinqhi_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, target_model=None: {
             "provider": None,
             "base_url": None,
@@ -6815,7 +6815,7 @@ def test_make_agent_waits_for_shared_mcp_discovery(monkeypatch):
     _setup_make_agent_mocks(monkeypatch, {})
     waited = []
 
-    from hermes_cli import mcp_startup
+    from kinqhi_cli import mcp_startup
 
     monkeypatch.setattr(
         mcp_startup,
@@ -6867,7 +6867,7 @@ def test_make_agent_uses_session_runtime_overrides(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "kinqhi_cli.runtime_provider.resolve_runtime_provider",
         fake_resolve_runtime_provider,
     )
 
@@ -7145,8 +7145,8 @@ def test_notification_poller_requeues_when_busy(monkeypatch):
             process_registry.completion_queue.get_nowait()
 
 
-def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, tmp_path):
-    """TUI /save (session.save RPC) must snapshot under the Hermes profile
+def test_session_save_writes_under_kinqhi_home_with_system_prompt(monkeypatch, tmp_path):
+    """TUI /save (session.save RPC) must snapshot under the Kinqhi profile
     home — not the project/workspace CWD — and include the system prompt,
     mirroring the classic CLI /save and the dashboard save export.
 
@@ -7156,7 +7156,7 @@ def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, t
     """
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("KINQHI_HOME", str(home))
 
     # Run from a different CWD to prove the snapshot does NOT leak there.
     work = tmp_path / "workspace"
@@ -7168,7 +7168,7 @@ def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, t
         model="hermes-test",
         session_id="20260101_120000_abc123",
         session_start=datetime(2026, 1, 1, 12, 0, 0),
-        _cached_system_prompt="You are Hermes.",
+        _cached_system_prompt="You are Kinqhi.",
     )
     history = [
         {"role": "user", "content": "hi"},
@@ -7200,7 +7200,7 @@ def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, t
     assert payload["model"] == "hermes-test"
     assert payload["session_id"] == "20260101_120000_abc123"
     assert payload["session_start"] == "2026-01-01T12:00:00"
-    assert payload["system_prompt"] == "You are Hermes."
+    assert payload["system_prompt"] == "You are Kinqhi."
     assert payload["messages"] == history
 
 
@@ -7316,7 +7316,7 @@ def _attach_bytes_cli(monkeypatch):
 def test_image_attach_bytes_writes_to_gateway_dir(monkeypatch, tmp_path):
     """Remote client uploads base64 bytes; gateway writes them to its own disk."""
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
     server._sessions["abx"] = _session()
 
     resp = server.handle_request(
@@ -7343,7 +7343,7 @@ def test_image_attach_bytes_writes_to_gateway_dir(monkeypatch, tmp_path):
 
 def test_image_attach_bytes_accepts_data_url_prefix(monkeypatch, tmp_path):
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
     server._sessions["abx2"] = _session()
 
     resp = server.handle_request(
@@ -7362,7 +7362,7 @@ def test_image_attach_bytes_accepts_data_url_prefix(monkeypatch, tmp_path):
 def test_image_attach_bytes_data_alias_and_magic_sniff(monkeypatch, tmp_path):
     """Older desktop builds send `data` (not content_base64); ext sniffed from bytes."""
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
     server._sessions["abx3"] = _session()
 
     resp = server.handle_request(
@@ -7379,7 +7379,7 @@ def test_image_attach_bytes_data_alias_and_magic_sniff(monkeypatch, tmp_path):
 
 def test_image_attach_bytes_rejects_invalid_base64(monkeypatch, tmp_path):
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
     server._sessions["abx4"] = _session()
 
     resp = server.handle_request(
@@ -7397,7 +7397,7 @@ def test_image_attach_bytes_rejects_oversize(monkeypatch, tmp_path):
     import base64 as _b64
 
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
     monkeypatch.setattr(server, "_ATTACH_BYTES_MAX_BYTES", 10)
     server._sessions["abx5"] = _session()
 
@@ -7415,7 +7415,7 @@ def test_image_attach_bytes_rejects_oversize(monkeypatch, tmp_path):
 
 def test_image_attach_bytes_rejects_unsupported_extension(monkeypatch, tmp_path):
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
     server._sessions["abx6"] = _session()
 
     # filename hint forces a non-image extension; magic sniff is bypassed by hint
@@ -7437,7 +7437,7 @@ def test_image_attach_bytes_rejects_unsupported_extension(monkeypatch, tmp_path)
 def test_pdf_attach_requires_poppler(monkeypatch, tmp_path):
     """Without pdftoppm on PATH, pdf.attach returns a clear 5028."""
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
     monkeypatch.setattr("shutil.which", lambda _name: None)
     server._sessions["pdf1"] = _session()
 
@@ -7456,7 +7456,7 @@ def test_pdf_attach_rejects_non_pdf_bytes(monkeypatch, tmp_path):
     import base64 as _b64
 
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
     monkeypatch.setattr("shutil.which", lambda _name: "/usr/bin/pdftoppm")
     server._sessions["pdf2"] = _session()
 
@@ -7474,7 +7474,7 @@ def test_pdf_attach_rejects_non_pdf_bytes(monkeypatch, tmp_path):
 
 def test_pdf_attach_requires_path_or_bytes(monkeypatch, tmp_path):
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_kinqhi_home", tmp_path)
     monkeypatch.setattr("shutil.which", lambda _name: "/usr/bin/pdftoppm")
     server._sessions["pdf3"] = _session()
 

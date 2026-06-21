@@ -14,7 +14,7 @@ test_yuanbao_integration.py - Yuanbao 模块集成测试
 import sys
 import os
 
-# 确保 hermes-agent 根目录在 sys.path 中
+# 确保 kinqhi 根目录在 sys.path 中
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
@@ -112,9 +112,9 @@ class TestGatewayRunnerRegistration:
         # Stub out heavy dependencies if not already present
         stubs = [
             "dotenv",
-            "hermes_cli.env_loader",
-            "hermes_cli.config",
-            "hermes_constants",
+            "kinqhi_cli.env_loader",
+            "kinqhi_cli.config",
+            "kinqhi_constants",
         ]
         _orig = {}
         for mod in stubs:

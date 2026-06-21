@@ -1,6 +1,6 @@
-"""CLI entry point for the hermes-agent ACP adapter.
+"""CLI entry point for the kinqhi ACP adapter.
 
-Loads environment variables from ``~/.hermes/.env``, configures logging
+Loads environment variables from ``~/.kinqhi/.env``, configures logging
 to write to stderr (so stdout is reserved for ACP JSON-RPC transport),
 and starts the ACP agent server.
 
@@ -8,18 +8,18 @@ Usage::
 
     python -m acp_adapter.entry
     # or
-    hermes acp
+    kinqhi acp
     # or
-    hermes-acp
+    kinqhi-acp
 """
 
-# IMPORTANT: hermes_bootstrap must be the very first import — UTF-8 stdio
-# on Windows.  No-op on POSIX.  See hermes_bootstrap.py for full rationale.
+# IMPORTANT: kinqhi_bootstrap must be the very first import — UTF-8 stdio
+# on Windows.  No-op on POSIX.  See kinqhi_bootstrap.py for full rationale.
 try:
-    import hermes_bootstrap  # noqa: F401
+    import kinqhi_bootstrap  # noqa: F401
 except ModuleNotFoundError:
-    # Graceful fallback when hermes_bootstrap isn't registered in the venv
-    # yet — happens during partial ``hermes update`` where git-reset landed
+    # Graceful fallback when kinqhi_bootstrap isn't registered in the venv
+    # yet — happens during partial ``kinqhi update`` where git-reset landed
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
     pass
@@ -29,7 +29,7 @@ import asyncio
 import logging
 import sys
 from pathlib import Path
-from hermes_constants import get_hermes_home
+from kinqhi_constants import get_kinqhi_home
 
 
 # Methods clients send as periodic liveness probes. They are not part of the
@@ -94,26 +94,26 @@ def _setup_logging() -> None:
 
 
 def _load_env() -> None:
-    """Load .env from HERMES_HOME (default ``~/.hermes``)."""
-    from hermes_cli.env_loader import load_hermes_dotenv
+    """Load .env from KINQHI_HOME (default ``~/.kinqhi``)."""
+    from kinqhi_cli.env_loader import load_hermes_dotenv
 
-    hermes_home = get_hermes_home()
-    loaded = load_hermes_dotenv(hermes_home=hermes_home)
+    kinqhi_home = get_kinqhi_home()
+    loaded = load_hermes_dotenv(kinqhi_home=kinqhi_home)
     if loaded:
         for env_file in loaded:
             logging.getLogger(__name__).info("Loaded env from %s", env_file)
     else:
         logging.getLogger(__name__).info(
-            "No .env found at %s, using system env", hermes_home / ".env"
+            "No .env found at %s, using system env", kinqhi_home / ".env"
         )
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog="hermes-acp",
-        description="Run Hermes Agent as an ACP stdio server.",
+        prog="kinqhi-acp",
+        description="Run Kinqhi as an ACP stdio server.",
     )
-    parser.add_argument("--version", action="store_true", help="Print Hermes version and exit")
+    parser.add_argument("--version", action="store_true", help="Print Kinqhi version and exit")
     parser.add_argument(
         "--check",
         action="store_true",
@@ -122,12 +122,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--setup",
         action="store_true",
-        help="Run interactive Hermes provider/model setup for ACP terminal auth",
+        help="Run interactive Kinqhi provider/model setup for ACP terminal auth",
     )
     parser.add_argument(
         "--setup-browser",
         action="store_true",
-        help="Install agent-browser + Playwright Chromium into ~/.hermes/node/ "
+        help="Install agent-browser + Playwright Chromium into ~/.kinqhi/node/ "
              "for browser tool support. Idempotent.",
     )
     parser.add_argument(
@@ -142,24 +142,24 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _print_version() -> None:
-    from hermes_cli import __version__ as hermes_version
+    from kinqhi_cli import __version__ as hermes_version
 
     print(hermes_version)
 
 
 def _run_check() -> None:
     import acp  # noqa: F401
-    from acp_adapter.server import HermesACPAgent  # noqa: F401
+    from acp_adapter.server import KinqhiACPAgent  # noqa: F401
 
-    print("Hermes ACP check OK")
+    print("Kinqhi ACP check OK")
 
 
 def _run_setup() -> None:
-    from hermes_cli.main import main as hermes_main
+    from kinqhi_cli.main import main as hermes_main
 
     old_argv = sys.argv[:]
     try:
-        sys.argv = [old_argv[0] if old_argv else "hermes", "model"]
+        sys.argv = [old_argv[0] if old_argv else "kinqhi", "model"]
         hermes_main()
     finally:
         sys.argv = old_argv
@@ -185,11 +185,11 @@ def _run_setup_browser(assume_yes: bool = False) -> int:
     """Bootstrap agent-browser + Chromium.
 
     Routes through dep_ensure -> install.{sh,ps1} --ensure, sharing code
-    with ``hermes postinstall`` and the runtime lazy installer.
+    with ``kinqhi postinstall`` and the runtime lazy installer.
 
     Returns 0 on success, 1 on failure.
     """
-    from hermes_cli.dep_ensure import ensure_dependency
+    from kinqhi_cli.dep_ensure import ensure_dependency
 
     try:
         node_ok = ensure_dependency("node", interactive=not assume_yes)
@@ -231,7 +231,7 @@ def main(argv: list[str] | None = None) -> None:
     _load_env()
 
     logger = logging.getLogger(__name__)
-    logger.info("Starting hermes-agent ACP adapter")
+    logger.info("Starting kinqhi ACP adapter")
 
     # Ensure the project root is on sys.path so ``from run_agent import AIAgent`` works
     project_root = str(Path(__file__).resolve().parent.parent)
@@ -239,7 +239,7 @@ def main(argv: list[str] | None = None) -> None:
         sys.path.insert(0, project_root)
 
     import acp
-    from .server import HermesACPAgent
+    from .server import KinqhiACPAgent
 
     # MCP tool discovery from config.yaml — run before asyncio.run() so
     # it's safe to use blocking waits.  (ACP also registers per-session
@@ -252,7 +252,7 @@ def main(argv: list[str] | None = None) -> None:
     except Exception:
         logger.debug("MCP tool discovery failed at ACP startup", exc_info=True)
 
-    agent = HermesACPAgent()
+    agent = KinqhiACPAgent()
     try:
         asyncio.run(acp.run_agent(agent, use_unstable_protocol=True))
     except KeyboardInterrupt:

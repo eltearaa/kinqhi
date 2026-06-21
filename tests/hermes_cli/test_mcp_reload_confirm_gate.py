@@ -11,7 +11,7 @@ run silently.
 from __future__ import annotations
 
 
-from hermes_cli.config import DEFAULT_CONFIG
+from kinqhi_cli.config import DEFAULT_CONFIG
 
 
 class TestMcpReloadConfirmDefault:
@@ -51,10 +51,10 @@ class TestUserConfigMerge:
         }
         cfg_path.write_text(yaml.safe_dump(legacy))
 
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        # Force a fresh reimport of config.py so the HERMES_HOME is honored.
+        monkeypatch.setenv("KINQHI_HOME", str(home))
+        # Force a fresh reimport of config.py so the KINQHI_HOME is honored.
         import importlib
-        import hermes_cli.config as cfg_mod
+        import kinqhi_cli.config as cfg_mod
         importlib.reload(cfg_mod)
 
         cfg = cfg_mod.load_config()
@@ -81,9 +81,9 @@ class TestUserConfigMerge:
         }
         cfg_path.write_text(yaml.safe_dump(user_cfg))
 
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("KINQHI_HOME", str(home))
         import importlib
-        import hermes_cli.config as cfg_mod
+        import kinqhi_cli.config as cfg_mod
         importlib.reload(cfg_mod)
 
         cfg = cfg_mod.load_config()

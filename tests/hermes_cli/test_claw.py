@@ -1,4 +1,4 @@
-"""Tests for hermes claw commands."""
+"""Tests for kinqhi claw commands."""
 
 from argparse import Namespace
 import subprocess
@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_cli import claw as claw_mod
+from kinqhi_cli import claw as claw_mod
 
 
 # ---------------------------------------------------------------------------

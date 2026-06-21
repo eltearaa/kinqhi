@@ -854,7 +854,7 @@ class TestGetDueJobs:
         now = datetime(2026, 5, 19, 13, 2, 0, tzinfo=current_tz)
         monkeypatch.setattr("cron.jobs._hermes_now", lambda: now)
 
-        # A 21:00 cron was stored while Hermes/system local time was UTC+10.
+        # A 21:00 cron was stored while Kinqhi/system local time was UTC+10.
         # After the host moves to UTC+02, that absolute timestamp converts to
         # 13:00+02.  At 13:02+02 the old code considered it due and fired, even
         # though the user's local wall-clock cron intent is still 21:00.

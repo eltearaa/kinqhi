@@ -11,8 +11,8 @@ import types
 import pytest
 
 import cli as cli_mod
-from hermes_cli import main as main_mod
-from hermes_cli import mcp_startup
+from kinqhi_cli import main as main_mod
+from kinqhi_cli import mcp_startup
 
 
 @pytest.fixture(autouse=True)
@@ -54,12 +54,12 @@ def test_prepare_agent_startup_backgrounds_blocking_mcp_for_chat(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "kinqhi_cli.plugins",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.config",
+        "kinqhi_cli.config",
         types.SimpleNamespace(
             read_raw_config=lambda: {"mcp_servers": {"demo": {"transport": "stdio"}}},
             load_config=lambda: {},
@@ -93,12 +93,12 @@ def test_prepare_agent_startup_skips_mcp_bootstrap_for_tui_chat(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.plugins",
+        "kinqhi_cli.plugins",
         types.SimpleNamespace(discover_plugins=lambda: None),
     )
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.config",
+        "kinqhi_cli.config",
         types.SimpleNamespace(load_config=lambda: {}),
     )
     monkeypatch.setitem(
@@ -143,7 +143,7 @@ def test_cli_get_tool_definitions_briefly_waits_for_fast_mcp_thread(monkeypatch)
 def test_init_agent_waits_for_mcp_discovery_before_agent_build(monkeypatch):
     waited = {"done": False}
 
-    cli = cli_mod.HermesCLI(compact=True)
+    cli = cli_mod.KinqhiCLI(compact=True)
     cli._session_db = object()
     cli._resumed = False
     cli.conversation_history = []

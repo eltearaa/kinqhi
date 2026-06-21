@@ -1,13 +1,13 @@
-"""Tests for hermes_cli.relaunch — unified self-relaunch utility."""
+"""Tests for kinqhi_cli.relaunch — unified self-relaunch utility."""
 
 import sys
 
 import pytest
 
-from hermes_cli import relaunch as relaunch_mod
+from kinqhi_cli import relaunch as relaunch_mod
 
 
-class TestResolveHermesBin:
+class TestResolveKinqhiBin:
     def test_prefers_absolute_argv0_when_executable(self, monkeypatch):
         fake = "/nix/store/abc/bin/hermes"
         monkeypatch.setattr(sys, "argv", [fake])
@@ -112,7 +112,7 @@ class TestBuildRelaunchArgv:
     def test_falls_back_to_python_module(self, monkeypatch):
         monkeypatch.setattr(relaunch_mod, "resolve_hermes_bin", lambda: None)
         argv = relaunch_mod.build_relaunch_argv(["--resume", "abc"])
-        assert argv == [sys.executable, "-m", "hermes_cli.main", "--resume", "abc"]
+        assert argv == [sys.executable, "-m", "kinqhi_cli.main", "--resume", "abc"]
 
     def test_preserves_inherited_flags(self, monkeypatch):
         monkeypatch.setattr(relaunch_mod, "resolve_hermes_bin", lambda: "/usr/bin/hermes")
@@ -232,7 +232,7 @@ class TestRelaunch:
         assert "open a new terminal" in err.lower() or "path" in err.lower()
 
 
-class TestResolveHermesBinWindowsPyGuard:
+class TestResolveKinqhiBinWindowsPyGuard:
     """On Windows, resolve_hermes_bin MUST NOT return a .py path.
     os.access(x, os.X_OK) returns True for .py files on Windows because
     PATHEXT includes .py when the Python launcher is installed — but
@@ -275,7 +275,7 @@ class TestResolveHermesBinWindowsPyGuard:
     def test_windows_py_argv0_with_no_hermes_on_path_returns_none(self, monkeypatch, tmp_path):
         """Bulletproof fallback: if argv0 is .py on Windows AND hermes.exe
         isn't on PATH, return None so the caller falls back to
-        python -m hermes_cli.main."""
+        python -m kinqhi_cli.main."""
         script = tmp_path / "main.py"
         script.write_text("# stub")
 

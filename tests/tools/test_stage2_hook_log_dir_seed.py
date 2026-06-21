@@ -1,4 +1,4 @@
-"""Contract test: the s6-overlay stage2 hook seeds $HERMES_HOME/logs/gateways
+"""Contract test: the s6-overlay stage2 hook seeds $KINQHI_HOME/logs/gateways
 as the hermes user.
 
 Regression guard for #45258: the per-profile gateway log service
@@ -39,13 +39,13 @@ def _seed_mkdir_block(text: str) -> str:
 
 def test_logs_gateways_is_seeded(stage2_text: str) -> None:
     block = _seed_mkdir_block(stage2_text)
-    assert '"$HERMES_HOME/logs/gateways"' in block, (
+    assert '"$KINQHI_HOME/logs/gateways"' in block, (
         "logs/gateways must be seeded hermes-owned in stage2 so profiles "
         "added after first boot can create their log dirs (#45258)"
     )
     # The parent must also be seeded so mkdir -p inside the block never
     # creates logs/ implicitly with surprising ownership.
-    assert '"$HERMES_HOME/logs"' in block
+    assert '"$KINQHI_HOME/logs"' in block
 
 
 def test_logs_subtree_is_healed_when_chown_needed(stage2_text: str) -> None:

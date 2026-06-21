@@ -493,7 +493,7 @@ export function StatusRule({
   const sessionCountText = liveSessionCount > 0 ? statusSessionCountLabel(liveSessionCount) : ''
   const compressions = typeof usage.compressions === 'number' ? usage.compressions : 0
   const costText = typeof usage.cost_usd === 'number' ? `$${usage.cost_usd.toFixed(4)}` : ''
-  // Dev-only readout (HERMES_DEV_CREDITS). The server omits the key entirely unless the
+  // Dev-only readout (KINQHI_DEV_CREDITS). The server omits the key entirely unless the
   // flag is on, so this segment self-hides for normal users. micros→cents is allowed money
   // math (display formatting) — never parseFloat a *_usd. Signed: a mid-session top-up that
   // raises remaining nets a negative Δ (honest).

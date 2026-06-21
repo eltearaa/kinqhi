@@ -1,4 +1,4 @@
-"""Tests for the Hermes plugin system (hermes_cli.plugins)."""
+"""Tests for the Kinqhi plugin system (kinqhi_cli.plugins)."""
 
 import logging
 import sys
@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
-from hermes_cli.plugins import (
+from kinqhi_cli.plugins import (
     ENTRY_POINTS_GROUP,
     VALID_HOOKS,
     PluginContext,
@@ -21,7 +21,7 @@ from hermes_cli.plugins import (
     has_middleware,
     resolve_plugin_command_result,
 )
-from hermes_cli.middleware import (
+from kinqhi_cli.middleware import (
     VALID_MIDDLEWARE,
     apply_llm_request_middleware,
     apply_tool_request_middleware,
@@ -38,13 +38,13 @@ def _make_plugin_dir(base: Path, name: str, *, register_body: str = "pass",
     """Create a minimal plugin directory with plugin.yaml + __init__.py.
 
     If *auto_enable* is True (default), also write the plugin's name into
-    ``<hermes_home>/config.yaml`` under ``plugins.enabled``. Plugins are
+    ``<kinqhi_home>/config.yaml`` under ``plugins.enabled``. Plugins are
     opt-in by default, so tests that expect the plugin to actually load
     need this. Pass ``auto_enable=False`` for tests that exercise the
     unenabled path.
 
-    *base* is expected to be ``<hermes_home>/plugins/``; we derive
-    ``<hermes_home>`` from it by walking one level up.
+    *base* is expected to be ``<kinqhi_home>/plugins/``; we derive
+    ``<kinqhi_home>`` from it by walking one level up.
     """
     plugin_dir = base / name
     plugin_dir.mkdir(parents=True, exist_ok=True)
@@ -59,17 +59,17 @@ def _make_plugin_dir(base: Path, name: str, *, register_body: str = "pass",
     )
 
     if auto_enable:
-        # Write/merge plugins.enabled in <HERMES_HOME>/config.yaml.
-        # Config is always read from HERMES_HOME (not from the project
+        # Write/merge plugins.enabled in <KINQHI_HOME>/config.yaml.
+        # Config is always read from KINQHI_HOME (not from the project
         # dir for project plugins), so that's where we opt in.
         import os
-        hermes_home_str = os.environ.get("HERMES_HOME")
-        if hermes_home_str:
-            hermes_home = Path(hermes_home_str)
+        kinqhi_home_str = os.environ.get("KINQHI_HOME")
+        if kinqhi_home_str:
+            kinqhi_home = Path(kinqhi_home_str)
         else:
-            hermes_home = base.parent
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        cfg_path = hermes_home / "config.yaml"
+            kinqhi_home = base.parent
+        kinqhi_home.mkdir(parents=True, exist_ok=True)
+        cfg_path = kinqhi_home / "config.yaml"
         cfg: dict = {}
         if cfg_path.exists():
             try:
@@ -92,10 +92,10 @@ class TestPluginDiscovery:
     """Tests for plugin discovery from directories and entry points."""
 
     def test_discover_user_plugins(self, tmp_path, monkeypatch):
-        """Plugins in ~/.hermes/plugins/ are discovered."""
+        """Plugins in ~/.kinqhi/plugins/ are discovered."""
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "hello_plugin")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -115,7 +115,7 @@ class TestPluginDiscovery:
                 "lambda **kw: {'args': {**kw['args'], 'mw': True}})"
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -138,7 +138,7 @@ class TestPluginDiscovery:
             return kwargs["next_call"](kwargs["args"])
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [middleware]})
-        monkeypatch.setattr("hermes_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("kinqhi_cli.plugins.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(args)
@@ -151,7 +151,7 @@ class TestPluginDiscovery:
 
     def test_middleware_helpers_skip_no_listener_work(self, monkeypatch):
         manager = types.SimpleNamespace(_middleware={})
-        monkeypatch.setattr("hermes_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("kinqhi_cli.plugins.get_plugin_manager", lambda: manager)
 
         request = {"messages": []}
         args = {"path": "README.md"}
@@ -178,7 +178,7 @@ class TestPluginDiscovery:
             _middleware={"tool_request": [same_payload_middleware]},
             invoke_middleware=lambda kind, **kwargs: [same_payload_middleware(**kwargs)],
         )
-        monkeypatch.setattr("hermes_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("kinqhi_cli.plugins.get_plugin_manager", lambda: manager)
 
         args = {"path": "README.md"}
         result = apply_tool_request_middleware("read_file", args)
@@ -196,7 +196,7 @@ class TestPluginDiscovery:
             raise RuntimeError(f"post-processing failed after {result}")
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [middleware]})
-        monkeypatch.setattr("hermes_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("kinqhi_cli.plugins.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(args)
@@ -219,7 +219,7 @@ class TestPluginDiscovery:
             return kwargs["next_call"]({**kwargs["args"], "rewritten": True})
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [failing_middleware, downstream_middleware]})
-        monkeypatch.setattr("hermes_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("kinqhi_cli.plugins.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(("terminal", args))
@@ -240,7 +240,7 @@ class TestPluginDiscovery:
                 raise RuntimeError(f"translated downstream failure: {exc}") from exc
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [middleware]})
-        monkeypatch.setattr("hermes_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("kinqhi_cli.plugins.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(args)
@@ -261,7 +261,7 @@ class TestPluginDiscovery:
                 raise RuntimeError(f"middleware should not catch base exception: {exc}") from exc
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [middleware]})
-        monkeypatch.setattr("hermes_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("kinqhi_cli.plugins.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(args)
@@ -284,7 +284,7 @@ class TestPluginDiscovery:
             return first
 
         manager = types.SimpleNamespace(_middleware={"tool_execution": [middleware]})
-        monkeypatch.setattr("hermes_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("kinqhi_cli.plugins.get_plugin_manager", lambda: manager)
 
         def terminal(args):
             calls.append(args)
@@ -308,7 +308,7 @@ class TestPluginDiscovery:
             _middleware={"tool_request": [middleware]},
             invoke_middleware=lambda kind, **kwargs: [middleware(**kwargs)],
         )
-        monkeypatch.setattr("hermes_cli.plugins.get_plugin_manager", lambda: manager)
+        monkeypatch.setattr("kinqhi_cli.plugins.get_plugin_manager", lambda: manager)
 
         # threading.Lock is not deepcopyable; a hard deepcopy would raise.
         args = {"command": "noop", "lock": threading.Lock()}
@@ -325,7 +325,7 @@ class TestPluginDiscovery:
         project_dir = tmp_path / "project"
         project_dir.mkdir()
         monkeypatch.chdir(project_dir)
-        monkeypatch.setenv("HERMES_ENABLE_PROJECT_PLUGINS", "true")
+        monkeypatch.setenv("KINQHI_ENABLE_PROJECT_PLUGINS", "true")
         plugins_dir = project_dir / ".hermes" / "plugins"
         _make_plugin_dir(plugins_dir, "proj_plugin")
 
@@ -352,7 +352,7 @@ class TestPluginDiscovery:
         """Calling discover_and_load() twice does not duplicate plugins."""
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "once_plugin")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -376,7 +376,7 @@ class TestPluginDiscovery:
         """
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "retry_plugin")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
 
@@ -390,7 +390,7 @@ class TestPluginDiscovery:
 
         # A later call (with discovery healthy again) must do the real scan.
         monkeypatch.undo()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
         mgr.discover_and_load()
         assert mgr._discovered is True
         non_bundled = {
@@ -403,7 +403,7 @@ class TestPluginDiscovery:
         """Directories without plugin.yaml are silently skipped."""
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         (plugins_dir / "no_manifest").mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -417,7 +417,7 @@ class TestPluginDiscovery:
 
     def test_entry_points_scanned(self, tmp_path, monkeypatch):
         """Entry-point based plugins are discovered (mocked)."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         fake_module = types.ModuleType("fake_ep_plugin")
         fake_module.register = lambda ctx: None  # type: ignore[attr-defined]
@@ -498,11 +498,11 @@ class TestPluginLoading:
         (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "bad_plugin"}))
         # Explicitly enable so the loader tries to import it and hits the
         # missing-init error.
-        hermes_home = tmp_path / "hermes_test"
-        (hermes_home / "config.yaml").write_text(
+        kinqhi_home = tmp_path / "hermes_test"
+        (kinqhi_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["bad_plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("KINQHI_HOME", str(kinqhi_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -521,11 +521,11 @@ class TestPluginLoading:
         (plugin_dir / "plugin.yaml").write_text(yaml.dump({"name": "no_reg"}))
         (plugin_dir / "__init__.py").write_text("# no register function\n")
         # Explicitly enable it so the loader actually tries to import.
-        hermes_home = tmp_path / "hermes_test"
-        (hermes_home / "config.yaml").write_text(
+        kinqhi_home = tmp_path / "hermes_test"
+        (kinqhi_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["no_reg"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("KINQHI_HOME", str(kinqhi_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -538,7 +538,7 @@ class TestPluginLoading:
         """Directory plugins are importable under hermes_plugins.<name>."""
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "ns_plugin")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         # Clean up any prior namespace module
         sys.modules.pop("hermes_plugins.ns_plugin", None)
@@ -574,11 +574,11 @@ class TestPluginLoading:
         )
         # Even if the user explicitly enables it in config, the loader
         # should still treat it as exclusive and skip general loading.
-        hermes_home = tmp_path / "hermes_test"
-        (hermes_home / "config.yaml").write_text(
+        kinqhi_home = tmp_path / "hermes_test"
+        (kinqhi_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["mempalace"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("KINQHI_HOME", str(kinqhi_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -608,7 +608,7 @@ class TestPluginLoading:
             "# This plugin inspects MemoryProvider docs but isn't one.\n"
             "def register(ctx):\n    pass\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -644,7 +644,7 @@ class TestPluginHooks:
                 'lambda **kw: {"action": "skip", "reason": "test"})'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -665,7 +665,7 @@ class TestPluginHooks:
             plugins_dir, "hook_plugin",
             register_body='ctx.register_hook("pre_tool_call", lambda **kw: None)',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -684,7 +684,7 @@ class TestPluginHooks:
                 'lambda **kw: kw.get("telemetry_schema_version"))'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -700,7 +700,7 @@ class TestPluginHooks:
             plugins_dir, "bad_hook",
             register_body='ctx.register_hook("post_tool_call", lambda **kw: 1/0)',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -718,7 +718,7 @@ class TestPluginHooks:
                 'lambda **kw: {"context": "memory from plugin"})'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -735,7 +735,7 @@ class TestPluginHooks:
             plugins_dir, "none_hook",
             register_body='ctx.register_hook("post_llm_call", lambda **kw: None)',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -754,7 +754,7 @@ class TestPluginHooks:
                 '"mc": kw.get("message_count"), "tc": kw.get("tool_count")})'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -784,7 +784,7 @@ class TestPluginHooks:
                 'lambda **kw: f"{kw[\'command\']}|{kw[\'returncode\']}|{kw[\'env_type\']}|{kw[\'task_id\']}|{len(kw[\'output\'])}")'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -806,9 +806,9 @@ class TestPluginHooks:
             plugins_dir, "warn_plugin",
             register_body='ctx.register_hook("on_banana", lambda **kw: None)',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="kinqhi_cli.plugins"):
             mgr = PluginManager()
             mgr.discover_and_load()
 
@@ -819,7 +819,7 @@ class TestPreToolCallBlocking:
 
     def test_block_message_returned_for_valid_directive(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "kinqhi_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [{"action": "block", "message": "blocked by plugin"}],
         )
         assert get_pre_tool_call_block_message("todo", {}, task_id="t1") == "blocked by plugin"
@@ -827,7 +827,7 @@ class TestPreToolCallBlocking:
     def test_invalid_returns_are_ignored(self, monkeypatch):
         """Various malformed hook returns should not trigger a block."""
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "kinqhi_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [
                 "block",                                 # not a dict
                 123,                                     # not a dict
@@ -841,14 +841,14 @@ class TestPreToolCallBlocking:
 
     def test_none_when_no_hooks(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "kinqhi_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         assert get_pre_tool_call_block_message("web_search", {"q": "test"}) is None
 
     def test_first_valid_block_wins(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "kinqhi_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [
                 {"action": "allow"},
                 {"action": "block", "message": "first blocker"},
@@ -862,13 +862,13 @@ class TestThreadToolWhitelist:
     """Tests for the thread-local tool whitelist used by background review forks."""
 
     def test_allowed_tool_passes_through_to_hooks(self, monkeypatch):
-        from hermes_cli.plugins import (
+        from kinqhi_cli.plugins import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "kinqhi_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         set_thread_tool_whitelist({"memory", "skill_manage"})
@@ -878,13 +878,13 @@ class TestThreadToolWhitelist:
             clear_thread_tool_whitelist()
 
     def test_disallowed_tool_blocked_with_message(self, monkeypatch):
-        from hermes_cli.plugins import (
+        from kinqhi_cli.plugins import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "kinqhi_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         set_thread_tool_whitelist(
@@ -897,13 +897,13 @@ class TestThreadToolWhitelist:
             clear_thread_tool_whitelist()
 
     def test_clear_restores_unrestricted_behavior(self, monkeypatch):
-        from hermes_cli.plugins import (
+        from kinqhi_cli.plugins import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "kinqhi_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
         set_thread_tool_whitelist({"memory"})
@@ -916,13 +916,13 @@ class TestThreadToolWhitelist:
         """Setting a whitelist in one thread must NOT leak into another."""
         import threading
 
-        from hermes_cli.plugins import (
+        from kinqhi_cli.plugins import (
             set_thread_tool_whitelist,
             clear_thread_tool_whitelist,
         )
 
         monkeypatch.setattr(
-            "hermes_cli.plugins.invoke_hook",
+            "kinqhi_cli.plugins.invoke_hook",
             lambda hook_name, **kwargs: [],
         )
 
@@ -968,11 +968,11 @@ class TestPluginContext:
             '        handler=lambda args, **kw: "echo",\n'
             '    )\n'
         )
-        hermes_home = tmp_path / "hermes_test"
-        (hermes_home / "config.yaml").write_text(
+        kinqhi_home = tmp_path / "hermes_test"
+        (kinqhi_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["tool_plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("KINQHI_HOME", str(kinqhi_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1008,11 +1008,11 @@ class TestPluginContext:
                 '        handler=lambda args, **kw: "plugin",\n'
                 '    )\n'
             )
-            hermes_home = tmp_path / "hermes_test"
-            (hermes_home / "config.yaml").write_text(
+            kinqhi_home = tmp_path / "hermes_test"
+            (kinqhi_home / "config.yaml").write_text(
                 yaml.safe_dump({"plugins": {"enabled": ["shadow_plugin"]}})
             )
-            monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+            monkeypatch.setenv("KINQHI_HOME", str(kinqhi_home))
 
             with caplog.at_level(logging.ERROR, logger="tools.registry"):
                 mgr = PluginManager()
@@ -1051,11 +1051,11 @@ class TestPluginContext:
                 '        override=True,\n'
                 '    )\n'
             )
-            hermes_home = tmp_path / "hermes_test"
-            (hermes_home / "config.yaml").write_text(
+            kinqhi_home = tmp_path / "hermes_test"
+            (kinqhi_home / "config.yaml").write_text(
                 yaml.safe_dump({"plugins": {"enabled": ["override_plugin"]}})
             )
-            monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+            monkeypatch.setenv("KINQHI_HOME", str(kinqhi_home))
 
             with caplog.at_level(logging.INFO, logger="tools.registry"):
                 mgr = PluginManager()
@@ -1092,11 +1092,11 @@ class TestPluginContext:
             '        override=True,\n'
             '    )\n'
         )
-        hermes_home = tmp_path / "hermes_test"
-        (hermes_home / "config.yaml").write_text(
+        kinqhi_home = tmp_path / "hermes_test"
+        (kinqhi_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["new_override_plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("KINQHI_HOME", str(kinqhi_home))
 
         try:
             mgr = PluginManager()
@@ -1114,7 +1114,7 @@ class TestPluginToolVisibility:
 
     def test_plugin_tools_in_definitions(self, tmp_path, monkeypatch):
         """Plugin tools are included when their toolset is in enabled_toolsets."""
-        import hermes_cli.plugins as plugins_mod
+        import kinqhi_cli.plugins as plugins_mod
 
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         plugin_dir = plugins_dir / "vis_plugin"
@@ -1129,11 +1129,11 @@ class TestPluginToolVisibility:
             '        handler=lambda args, **kw: "ok",\n'
             '    )\n'
         )
-        hermes_home = tmp_path / "hermes_test"
-        (hermes_home / "config.yaml").write_text(
+        kinqhi_home = tmp_path / "hermes_test"
+        (kinqhi_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["vis_plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("KINQHI_HOME", str(kinqhi_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1173,7 +1173,7 @@ class TestPluginManagerList:
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "zulu")
         _make_plugin_dir(plugins_dir, "alpha")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1189,7 +1189,7 @@ class TestPluginManagerList:
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "alpha")
         _make_plugin_dir(plugins_dir, "beta")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1222,7 +1222,7 @@ class TestPluginManagerList:
             plugins_dir, "second_hooker",
             register_body='ctx.register_hook("post_tool_call", lambda **kw: None)',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1259,7 +1259,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "basic_plugin",
             '{"context": "basic context"}',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1279,7 +1279,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "str_plugin",
             '"plain string context"',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1302,7 +1302,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "bbb_guardrail",
             '{"context": "guardrail text"}',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1335,7 +1335,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "ccc_plain",
             '"plain text C"',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1424,7 +1424,7 @@ class TestPluginCommands:
         manifest = PluginManifest(name="test-plugin", source="user")
         ctx = PluginContext(manifest, mgr)
 
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="kinqhi_cli.plugins"):
             ctx.register_command("", lambda a: a)
         assert len(mgr._plugin_commands) == 0
         assert "empty name" in caplog.text
@@ -1435,7 +1435,7 @@ class TestPluginCommands:
         manifest = PluginManifest(name="test-plugin", source="user")
         ctx = PluginContext(manifest, mgr)
 
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+        with caplog.at_level(logging.WARNING, logger="kinqhi_cli.plugins"):
             ctx.register_command("help", lambda a: a)
         assert "help" not in mgr._plugin_commands
         assert "conflicts" in caplog.text.lower()
@@ -1458,14 +1458,14 @@ class TestPluginCommands:
         handler = lambda args: f"result: {args}"
         ctx.register_command("mycmd", handler, description="test")
 
-        with patch("hermes_cli.plugins._plugin_manager", mgr):
+        with patch("kinqhi_cli.plugins._plugin_manager", mgr):
             result = get_plugin_command_handler("mycmd")
             assert result is handler
 
     def test_get_plugin_command_handler_not_found(self):
         """get_plugin_command_handler() returns None for unregistered commands."""
         mgr = PluginManager()
-        with patch("hermes_cli.plugins._plugin_manager", mgr):
+        with patch("kinqhi_cli.plugins._plugin_manager", mgr):
             assert get_plugin_command_handler("nonexistent") is None
 
     def test_get_plugin_commands_returns_dict(self):
@@ -1476,7 +1476,7 @@ class TestPluginCommands:
         ctx.register_command("cmd-a", lambda a: a, description="A")
         ctx.register_command("cmd-b", lambda a: a, description="B")
 
-        with patch("hermes_cli.plugins._plugin_manager", mgr):
+        with patch("kinqhi_cli.plugins._plugin_manager", mgr):
             cmds = get_plugin_commands()
             assert "cmd-a" in cmds
             assert "cmd-b" in cmds
@@ -1490,9 +1490,9 @@ class TestPluginCommands:
             "cmd-plugin",
             register_body='ctx.register_command("lazycmd", lambda a: f"ok:{a}", description="Lazy")',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
-        import hermes_cli.plugins as plugins_mod
+        import kinqhi_cli.plugins as plugins_mod
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             handler = get_plugin_command_handler("lazycmd")
@@ -1507,9 +1507,9 @@ class TestPluginCommands:
             "cmd-plugin",
             register_body='ctx.register_command("lazycmd", lambda a: a, description="Lazy")',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
-        import hermes_cli.plugins as plugins_mod
+        import kinqhi_cli.plugins as plugins_mod
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             cmds = get_plugin_commands()
@@ -1518,8 +1518,8 @@ class TestPluginCommands:
 
     def test_get_plugin_context_engine_discovers_plugins_lazily(self, tmp_path, monkeypatch):
         """Context engine lookup should work before any explicit discover_plugins() call."""
-        hermes_home = tmp_path / "hermes_test"
-        plugins_dir = hermes_home / "plugins"
+        kinqhi_home = tmp_path / "hermes_test"
+        plugins_dir = kinqhi_home / "plugins"
         plugin_dir = plugins_dir / "engine-plugin"
         plugin_dir.mkdir(parents=True, exist_ok=True)
         (plugin_dir / "plugin.yaml").write_text(
@@ -1545,12 +1545,12 @@ class TestPluginCommands:
             "    ctx.register_context_engine(StubEngine())\n"
         )
         # Opt-in: plugins are opt-in by default, so enable in config.yaml
-        (hermes_home / "config.yaml").write_text(
+        (kinqhi_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["engine-plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("KINQHI_HOME", str(kinqhi_home))
 
-        import hermes_cli.plugins as plugins_mod
+        import kinqhi_cli.plugins as plugins_mod
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             engine = plugins_mod.get_plugin_context_engine()
@@ -1566,7 +1566,7 @@ class TestPluginCommands:
                 'ctx.register_command("mycmd", lambda a: "ok", description="Test")'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1578,9 +1578,9 @@ class TestPluginCommands:
     def test_commands_in_list_plugins_output(self, tmp_path, monkeypatch):
         """list_plugins() includes command count."""
         plugins_dir = tmp_path / "hermes_test" / "plugins"
-        # Set HERMES_HOME BEFORE _make_plugin_dir so auto-enable targets
+        # Set KINQHI_HOME BEFORE _make_plugin_dir so auto-enable targets
         # the right config.yaml.
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path / "hermes_test"))
         _make_plugin_dir(
             plugins_dir, "cmd-plugin",
             register_body=(
@@ -1642,7 +1642,7 @@ class TestPluginCommandResultResolution:
         async def _handler():
             return "threaded-ok"
 
-        monkeypatch.setattr("hermes_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
+        monkeypatch.setattr("kinqhi_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
         assert resolve_plugin_command_result(_handler()) == "threaded-ok"
 
     def test_running_loop_timeout_does_not_hang_forever(self, monkeypatch):
@@ -1656,8 +1656,8 @@ class TestPluginCommandResultResolution:
             await _asyncio.sleep(10)
             return "should-not-reach"
 
-        monkeypatch.setattr("hermes_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
-        monkeypatch.setattr("hermes_cli.plugins._PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS", 0.1)
+        monkeypatch.setattr("kinqhi_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
+        monkeypatch.setattr("kinqhi_cli.plugins._PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS", 0.1)
 
         with pytest.raises(TimeoutError):
             resolve_plugin_command_result(_slow_handler())
@@ -1678,7 +1678,7 @@ class TestPluginDispatchTool:
         mock_registry = MagicMock()
         mock_registry.dispatch.return_value = '{"result": "ok"}'
 
-        with patch("hermes_cli.plugins.PluginContext.dispatch_tool.__module__", "hermes_cli.plugins"):
+        with patch("kinqhi_cli.plugins.PluginContext.dispatch_tool.__module__", "kinqhi_cli.plugins"):
             with patch.dict("sys.modules", {}):
                 with patch("tools.registry.registry", mock_registry):
                     result = ctx.dispatch_tool("web_search", {"query": "test"})
@@ -1796,12 +1796,12 @@ class TestPluginDispatchTool:
 
 
 class TestPluginDebugLogging:
-    """HERMES_PLUGINS_DEBUG opt-in stderr handler for plugin developers."""
+    """KINQHI_PLUGINS_DEBUG opt-in stderr handler for plugin developers."""
 
     def test_debug_handler_not_installed_when_env_var_absent(self, monkeypatch):
         """Without the env var, no stderr handler is attached."""
-        monkeypatch.delenv("HERMES_PLUGINS_DEBUG", raising=False)
-        from hermes_cli import plugins as plugins_mod
+        monkeypatch.delenv("KINQHI_PLUGINS_DEBUG", raising=False)
+        from kinqhi_cli import plugins as plugins_mod
 
         # Snapshot, then force a re-evaluation.
         original_installed = plugins_mod._DEBUG_HANDLER_INSTALLED
@@ -1820,9 +1820,9 @@ class TestPluginDebugLogging:
             plugins_mod.logger.handlers = original_handlers
 
     def test_debug_handler_installed_when_env_var_set(self, monkeypatch):
-        """With HERMES_PLUGINS_DEBUG=1, a DEBUG-level stderr handler is attached."""
-        monkeypatch.setenv("HERMES_PLUGINS_DEBUG", "1")
-        from hermes_cli import plugins as plugins_mod
+        """With KINQHI_PLUGINS_DEBUG=1, a DEBUG-level stderr handler is attached."""
+        monkeypatch.setenv("KINQHI_PLUGINS_DEBUG", "1")
+        from kinqhi_cli import plugins as plugins_mod
 
         original_installed = plugins_mod._DEBUG_HANDLER_INSTALLED
         original_debug = plugins_mod._PLUGINS_DEBUG
@@ -1848,8 +1848,8 @@ class TestPluginDebugLogging:
 
     def test_debug_handler_idempotent(self, monkeypatch):
         """Calling install twice (without force) does not double-attach."""
-        monkeypatch.setenv("HERMES_PLUGINS_DEBUG", "1")
-        from hermes_cli import plugins as plugins_mod
+        monkeypatch.setenv("KINQHI_PLUGINS_DEBUG", "1")
+        from kinqhi_cli import plugins as plugins_mod
 
         original_installed = plugins_mod._DEBUG_HANDLER_INSTALLED
         original_debug = plugins_mod._PLUGINS_DEBUG

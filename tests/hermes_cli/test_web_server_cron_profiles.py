@@ -7,7 +7,7 @@ from fastapi import HTTPException
 @pytest.fixture()
 def isolated_profiles(tmp_path, monkeypatch):
     """Give profile discovery an isolated default home with one named profile."""
-    from hermes_cli import profiles
+    from kinqhi_cli import profiles
 
     default_home = tmp_path / ".hermes"
     profiles_root = default_home / "profiles"
@@ -17,14 +17,14 @@ def isolated_profiles(tmp_path, monkeypatch):
         (home / "cron").mkdir(parents=True, exist_ok=True)
         (home / "config.yaml").write_text("model: test-model\n", encoding="utf-8")
 
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setattr(profiles, "_get_default_kinqhi_home", lambda: default_home)
     monkeypatch.setattr(profiles, "_get_profiles_root", lambda: profiles_root)
     return {"default": default_home, "worker_alpha": worker_home}
 
 
 def test_call_cron_for_profile_routes_storage_and_restores_globals(isolated_profiles):
     from cron import jobs as cron_jobs
-    from hermes_cli import web_server
+    from kinqhi_cli import web_server
 
     old_cron_dir = cron_jobs.CRON_DIR
     old_jobs_file = cron_jobs.JOBS_FILE
@@ -40,7 +40,7 @@ def test_call_cron_for_profile_routes_storage_and_restores_globals(isolated_prof
 
     assert job["profile"] == "worker_alpha"
     assert job["profile_name"] == "worker_alpha"
-    assert job["hermes_home"] == str(isolated_profiles["worker_alpha"])
+    assert job["kinqhi_home"] == str(isolated_profiles["worker_alpha"])
     assert job["is_default_profile"] is False
     assert (isolated_profiles["worker_alpha"] / "cron" / "jobs.json").exists()
     assert not (isolated_profiles["default"] / "cron" / "jobs.json").exists()
@@ -52,7 +52,7 @@ def test_call_cron_for_profile_routes_storage_and_restores_globals(isolated_prof
 
 @pytest.mark.asyncio
 async def test_list_cron_jobs_all_includes_default_and_named_profiles(isolated_profiles):
-    from hermes_cli import web_server
+    from kinqhi_cli import web_server
 
     default_job = web_server._call_cron_for_profile(
         "default",
@@ -75,15 +75,15 @@ async def test_list_cron_jobs_all_includes_default_and_named_profiles(isolated_p
     assert set(by_id) >= {default_job["id"], worker_job["id"]}
     assert by_id[default_job["id"]]["profile"] == "default"
     assert by_id[default_job["id"]]["is_default_profile"] is True
-    assert by_id[default_job["id"]]["hermes_home"] == str(isolated_profiles["default"])
+    assert by_id[default_job["id"]]["kinqhi_home"] == str(isolated_profiles["default"])
     assert by_id[worker_job["id"]]["profile"] == "worker_alpha"
     assert by_id[worker_job["id"]]["is_default_profile"] is False
-    assert by_id[worker_job["id"]]["hermes_home"] == str(isolated_profiles["worker_alpha"])
+    assert by_id[worker_job["id"]]["kinqhi_home"] == str(isolated_profiles["worker_alpha"])
 
 
 @pytest.mark.asyncio
 async def test_list_cron_jobs_specific_profile_filters_results(isolated_profiles):
-    from hermes_cli import web_server
+    from kinqhi_cli import web_server
 
     web_server._call_cron_for_profile(
         "default",
@@ -108,7 +108,7 @@ async def test_list_cron_jobs_specific_profile_filters_results(isolated_profiles
 
 @pytest.mark.asyncio
 async def test_cron_mutation_without_profile_finds_named_profile_job(isolated_profiles):
-    from hermes_cli import web_server
+    from kinqhi_cli import web_server
 
     worker_job = web_server._call_cron_for_profile(
         "worker_alpha",
@@ -135,7 +135,7 @@ async def test_cron_mutation_without_profile_finds_named_profile_job(isolated_pr
 async def test_update_cron_job_rejects_id_mutation(isolated_profiles):
     """Dashboard surfaces a 400 (not a 500 or silent rename) when an
     id-mutation attempt is rejected by cron/jobs.update_job."""
-    from hermes_cli import web_server
+    from kinqhi_cli import web_server
 
     worker_job = web_server._call_cron_for_profile(
         "worker_alpha",
@@ -160,7 +160,7 @@ async def test_update_cron_job_rejects_id_mutation(isolated_profiles):
 
 @pytest.mark.asyncio
 async def test_cron_delete_with_profile_deletes_only_target_profile(isolated_profiles):
-    from hermes_cli import web_server
+    from kinqhi_cli import web_server
 
     default_job = web_server._call_cron_for_profile(
         "default",
@@ -188,7 +188,7 @@ async def test_cron_delete_with_profile_deletes_only_target_profile(isolated_pro
 
 @pytest.mark.asyncio
 async def test_cron_profile_validation_errors(isolated_profiles):
-    from hermes_cli import web_server
+    from kinqhi_cli import web_server
 
     with pytest.raises(HTTPException) as bad_name:
         await web_server.list_cron_jobs(profile="../bad")

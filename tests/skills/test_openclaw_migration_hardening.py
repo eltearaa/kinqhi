@@ -1,4 +1,4 @@
-"""Tests for the OpenClaw→Hermes migration hardening features.
+"""Tests for the OpenClaw→Kinqhi migration hardening features.
 
 Covers the changes in the "claw migrate hardening" PR:
   - secret redaction (engine-level, applied to report JSON)

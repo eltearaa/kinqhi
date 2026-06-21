@@ -390,7 +390,7 @@ def test_max_tokens_none_defaults_to_gemini_output_ceiling():
     """max_tokens=None must send the model's full output ceiling, not omit it.
 
     Gemini's native generateContent applies a low internal default when
-    maxOutputTokens is absent, truncating tool calls mid-stream. Hermes passes
+    maxOutputTokens is absent, truncating tool calls mid-stream. Kinqhi passes
     None to mean "unlimited", so the adapter must translate that to the
     published 65,535 ceiling rather than leaving the field unset.
     """

@@ -4,7 +4,7 @@ Tests in this directory build the image with the current ``Dockerfile``
 and exercise it via ``docker run``. They skip when Docker is unavailable
 (e.g. on developer laptops without a daemon).
 
-Override the image with ``HERMES_TEST_IMAGE`` env var to point at a pre-built
+Override the image with ``KINQHI_TEST_IMAGE`` env var to point at a pre-built
 image (faster local iteration); otherwise the ``built_image`` fixture builds
 the repo's Dockerfile once per session.
 
@@ -21,7 +21,7 @@ from collections.abc import Iterator
 
 import pytest
 
-IMAGE_TAG = os.environ.get("HERMES_TEST_IMAGE", "hermes-agent-harness:latest")
+IMAGE_TAG = os.environ.get("KINQHI_TEST_IMAGE", "kinqhi-harness:latest")
 
 
 def _docker_available() -> bool:
@@ -56,10 +56,10 @@ def pytest_collection_modifyitems(config, items):  # noqa: D401 - pytest hook
 def built_image() -> str:
     """Build the image once per test session.
 
-    Override with ``HERMES_TEST_IMAGE`` env var to point at a pre-built
+    Override with ``KINQHI_TEST_IMAGE`` env var to point at a pre-built
     image (faster local iteration).
     """
-    if os.environ.get("HERMES_TEST_IMAGE"):
+    if os.environ.get("KINQHI_TEST_IMAGE"):
         return IMAGE_TAG
     repo_root = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", ".."),
@@ -90,7 +90,7 @@ def container_name(request) -> Iterator[str]:
 # docker_exec — default to the unprivileged hermes user
 # ---------------------------------------------------------------------------
 #
-# Background: every Hermes runtime path inside the container drops to UID
+# Background: every Kinqhi runtime path inside the container drops to UID
 # 10000 (the ``hermes`` user) via ``s6-setuidgid hermes``. ``docker exec``
 # without ``-u`` runs as root, which is **not** representative of how
 # production code executes. PR #30136 review caught a real regression

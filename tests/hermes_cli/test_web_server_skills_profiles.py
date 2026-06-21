@@ -5,7 +5,7 @@ file (future CLI/gateway runs) — it never retargets the running dashboard
 process. Before the ``profile`` parameter existed, toggling a skill after
 "activating" a profile silently wrote into the dashboard's own config.
 These tests pin the new behavior: reads and writes land in the REQUESTED
-profile's HERMES_HOME, and the dashboard's own profile stays untouched.
+profile's KINQHI_HOME, and the dashboard's own profile stays untouched.
 """
 import pytest
 import yaml
@@ -21,12 +21,12 @@ def _write_skill(skills_dir, name, description="test skill"):
 
 
 @pytest.fixture
-def isolated_profiles(tmp_path, monkeypatch, _isolate_hermes_home):
+def isolated_profiles(tmp_path, monkeypatch, _isolate_kinqhi_home):
     """Isolated default home + one named profile, each with its own skills."""
-    from hermes_constants import get_hermes_home
-    from hermes_cli import profiles
+    from kinqhi_constants import get_kinqhi_home
+    from kinqhi_cli import profiles
 
-    default_home = get_hermes_home()
+    default_home = get_kinqhi_home()
     profiles_root = default_home / "profiles"
     worker_home = profiles_root / "worker_alpha"
     for home in (default_home, worker_home):
@@ -36,7 +36,7 @@ def isolated_profiles(tmp_path, monkeypatch, _isolate_hermes_home):
     _write_skill(default_home / "skills", "dashboard-skill")
     _write_skill(worker_home / "skills", "worker-skill")
 
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setattr(profiles, "_get_default_kinqhi_home", lambda: default_home)
     monkeypatch.setattr(profiles, "_get_profiles_root", lambda: profiles_root)
     return {"default": default_home, "worker_alpha": worker_home}
 
@@ -48,11 +48,11 @@ def client(monkeypatch, isolated_profiles):
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    import hermes_state
-    from hermes_constants import get_hermes_home
-    from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+    import kinqhi_state
+    from kinqhi_constants import get_kinqhi_home
+    from kinqhi_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
+    monkeypatch.setattr(kinqhi_state, "DEFAULT_DB_PATH", get_kinqhi_home() / "state.db")
     c = TestClient(app)
     c.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
     return c
@@ -160,7 +160,7 @@ class TestProfileScopedHubActions:
         """Hub installs must go through a fresh ``hermes -p <profile>``
         subprocess — the in-process scope can't reach skills_hub's
         import-time SKILLS_DIR binding."""
-        import hermes_cli.web_server as web_server
+        import kinqhi_cli.web_server as web_server
 
         calls = []
 
@@ -187,7 +187,7 @@ class TestProfileScopedHubActions:
     def test_hub_install_without_profile_keeps_legacy_argv(
         self, client, isolated_profiles, monkeypatch
     ):
-        import hermes_cli.web_server as web_server
+        import kinqhi_cli.web_server as web_server
 
         calls = []
 

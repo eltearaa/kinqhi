@@ -11,7 +11,7 @@ cli.py::_confirm_destructive_slash for the runtime gate.
 
 from __future__ import annotations
 
-from hermes_cli.config import DEFAULT_CONFIG
+from kinqhi_cli.config import DEFAULT_CONFIG
 
 
 class TestDestructiveSlashConfirmDefault:
@@ -48,9 +48,9 @@ class TestUserConfigMerge:
         }
         cfg_path.write_text(yaml.safe_dump(legacy))
 
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("KINQHI_HOME", str(home))
         import importlib
-        import hermes_cli.config as cfg_mod
+        import kinqhi_cli.config as cfg_mod
         importlib.reload(cfg_mod)
 
         cfg = cfg_mod.load_config()
@@ -77,9 +77,9 @@ class TestUserConfigMerge:
         }
         cfg_path.write_text(yaml.safe_dump(user_cfg))
 
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("KINQHI_HOME", str(home))
         import importlib
-        import hermes_cli.config as cfg_mod
+        import kinqhi_cli.config as cfg_mod
         importlib.reload(cfg_mod)
 
         cfg = cfg_mod.load_config()

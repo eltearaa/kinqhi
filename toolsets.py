@@ -27,12 +27,12 @@ from typing import List, Dict, Any, Set, Optional
 
 # Shared tool list for CLI and all messaging platform toolsets.
 # Edit this once to update all platforms simultaneously.
-_HERMES_CORE_TOOLS = [
+_KINQHI_CORE_TOOLS = [
     # Web search
     "web_search",
     # Terminal + process management
     "terminal", "process",
-    # Read the desktop GUI's embedded terminal pane (gated on HERMES_DESKTOP
+    # Read the desktop GUI's embedded terminal pane (gated on KINQHI_DESKTOP
     # via check_fn in tools/read_terminal_tool.py — hidden outside the GUI).
     "read_terminal",
     # File manipulation
@@ -55,7 +55,7 @@ _HERMES_CORE_TOOLS = [
     # Cronjob management
     "cronjob",
     # Kanban multi-agent coordination — only in schema when the agent is
-    # spawned as a kanban worker (HERMES_KANBAN_TASK env set) or the current
+    # spawned as a kanban worker (KINQHI_KANBAN_TASK env set) or the current
     # profile explicitly enables the kanban toolset. Gated via check_fn in
     # tools/kanban_tools.py.
     "kanban_show", "kanban_list",
@@ -185,7 +185,7 @@ TOOLSETS = {
     "kanban": {
         "description": (
             "Kanban multi-agent coordination — only active when the agent "
-            "is spawned by the kanban dispatcher (HERMES_KANBAN_TASK env "
+            "is spawned by the kanban dispatcher (KINQHI_KANBAN_TASK env "
             "set). The dispatcher runs inside the gateway by default; see "
             "`kanban.dispatch_in_gateway` in config.yaml. Lets workers mark "
             "tasks done with structured handoffs, block for human input, "
@@ -215,7 +215,7 @@ TOOLSETS = {
     "debugging": {
         "description": "Debugging and troubleshooting toolkit",
         "tools": ["terminal", "process"],
-        "includes": ["hermes-discord"]  # For searching error messages and solutions, and file operations
+        "includes": ["kinqhi-discord"]  # For searching error messages and solutions, and file operations
     },
     
     "safe": {
@@ -224,7 +224,7 @@ TOOLSETS = {
         "includes": ["web"]
     },
 
-    # Coding posture (base Hermes — CLI/TUI/desktop/ACP). Auto-selected in a
+    # Coding posture (base Kinqhi — CLI/TUI/desktop/ACP). Auto-selected in a
     # code workspace; see agent/coding_context.py. Keeps everything you reach
     # for while pairing on code and drops the rest (messaging, tts, image_gen,
     # spotify, home-assistant, cron, computer-use).
@@ -246,20 +246,20 @@ TOOLSETS = {
         "includes": [],
         # Posture toolset: selected per-session by agent/coding_context.py,
         # never auto-recovered into per-platform tool config (see the
-        # non-configurable-toolset recovery loop in hermes_cli/tools_config.py).
+        # non-configurable-toolset recovery loop in kinqhi_cli/tools_config.py).
         "posture": True,
     },
     
     # ==========================================================================
-    # Full Hermes toolsets (CLI + messaging platforms)
+    # Full Kinqhi toolsets (CLI + messaging platforms)
     #
     # All platforms share the same core tools. Note: agents do NOT get an
     # agent-callable send_message tool — outbound platform messaging is handled
     # outside the agent loop (cron delivery, the gateway kanban notifier, and
-    # the `hermes send` CLI), not by the model deciding to send on its own.
+    # the `kinqhi send` CLI), not by the model deciding to send on its own.
     # ==========================================================================
 
-    "hermes-acp": {
+    "kinqhi-acp": {
         "description": "Editor integration (VS Code, Zed, JetBrains) — coding-focused tools without messaging or audio",
         "tools": [
             "web_search",
@@ -277,7 +277,7 @@ TOOLSETS = {
         "includes": []
     },
 
-    "hermes-api-server": {
+    "kinqhi-api-server": {
         "description": "OpenAI-compatible API server — full agent tools accessible via HTTP",
         "tools": [
             # Web
@@ -305,48 +305,48 @@ TOOLSETS = {
         "includes": []
     },
     
-    "hermes-cli": {
+    "kinqhi-cli": {
         "description": "Full interactive CLI toolset - all default tools plus cronjob management",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _KINQHI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-cron": {
-        # Mirrors hermes-cli so cron's "default" toolset is the same set of
-        # core tools users see interactively — then `hermes tools` filters
+    "kinqhi-cron": {
+        # Mirrors kinqhi-cli so cron's "default" toolset is the same set of
+        # core tools users see interactively — then `kinqhi tools` filters
         # them down per the platform config. _DEFAULT_OFF_TOOLSETS (moa,
         # homeassistant) are excluded by _get_platform_tools() unless
         # the user explicitly enables them.
-        "description": "Default cron toolset - same core tools as hermes-cli; gated by `hermes tools`",
-        "tools": _HERMES_CORE_TOOLS,
+        "description": "Default cron toolset - same core tools as kinqhi-cli; gated by `kinqhi tools`",
+        "tools": _KINQHI_CORE_TOOLS,
         "includes": []
     },
 
     
-    "hermes-discord": {
+    "kinqhi-discord": {
         "description": "Discord bot toolset - full access (terminal has safety checks via dangerous command approval)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _KINQHI_CORE_TOOLS,
         "includes": []
     },
     
     
     
 
-    "hermes-homeassistant": {
+    "kinqhi-homeassistant": {
         "description": "Home Assistant bot toolset - smart home event monitoring and control",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _KINQHI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-email": {
-        "description": "Email bot toolset - interact with Hermes via email (IMAP/SMTP)",
-        "tools": _HERMES_CORE_TOOLS,
+    "kinqhi-email": {
+        "description": "Email bot toolset - interact with Kinqhi via email (IMAP/SMTP)",
+        "tools": _KINQHI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-feishu": {
+    "kinqhi-feishu": {
         "description": "Feishu/Lark bot toolset - enterprise messaging via Feishu/Lark (full access)",
-        "tools": _HERMES_CORE_TOOLS + [
+        "tools": _KINQHI_CORE_TOOLS + [
             "feishu_doc_read",
             "feishu_drive_list_comments",
             "feishu_drive_list_comment_replies",
@@ -356,15 +356,15 @@ TOOLSETS = {
         "includes": []
     },
 
-    "hermes-wecom": {
+    "kinqhi-wecom": {
         "description": "WeCom bot toolset - enterprise WeChat messaging (full access)",
-        "tools": _HERMES_CORE_TOOLS,
+        "tools": _KINQHI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-yuanbao": {
+    "kinqhi-yuanbao": {
         "description": "Yuanbao Bot 元宝消息平台工具集 - 群信息、成员查询、私聊、贴纸表情",
-        "tools": _HERMES_CORE_TOOLS + [
+        "tools": _KINQHI_CORE_TOOLS + [
             "yb_query_group_info",
             "yb_query_group_members",
             "yb_send_dm",
@@ -375,16 +375,16 @@ TOOLSETS = {
         "includes": []
     },
 
-    "hermes-sms": {
-        "description": "SMS bot toolset - interact with Hermes via SMS (Twilio)",
-        "tools": _HERMES_CORE_TOOLS,
+    "kinqhi-sms": {
+        "description": "SMS bot toolset - interact with Kinqhi via SMS (Twilio)",
+        "tools": _KINQHI_CORE_TOOLS,
         "includes": []
     },
 
-    "hermes-gateway": {
+    "kinqhi-gateway": {
         "description": "Gateway toolset - union of all messaging platform tools",
         "tools": [],
-        "includes": ["hermes-discord"]
+        "includes": ["kinqhi-discord"]
     }
 }
 
@@ -476,15 +476,15 @@ def resolve_toolset(name: str, visited: Set[str] = None) -> List[str]:
     # Get toolset definition
     toolset = get_toolset(name)
     if not toolset:
-        # Auto-generate a toolset for plugin platforms (hermes-<name>).
-        # Gives them _HERMES_CORE_TOOLS plus any tools the plugin registered
+        # Auto-generate a toolset for plugin platforms (kinqhi-<name>).
+        # Gives them _KINQHI_CORE_TOOLS plus any tools the plugin registered
         # into a toolset matching the platform name.
-        if name.startswith("hermes-"):
-            platform_name = name[len("hermes-"):]
+        if name.startswith("kinqhi-"):
+            platform_name = name[len("kinqhi-"):]
             try:
                 from gateway.platform_registry import platform_registry
                 if platform_registry.is_registered(platform_name):
-                    plugin_tools = set(_HERMES_CORE_TOOLS)
+                    plugin_tools = set(_KINQHI_CORE_TOOLS)
                     try:
                         from tools.registry import registry
                         plugin_tools.update(

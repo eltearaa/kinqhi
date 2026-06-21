@@ -105,7 +105,7 @@ def _text_resp(text: str) -> dict:
 
 @pytest.fixture()
 def agent_env():
-    """Spin up the mock provider + an isolated HERMES_HOME, yield (agent, helpers)."""
+    """Spin up the mock provider + an isolated KINQHI_HOME, yield (agent, helpers)."""
     _MockHandler.captured_requests = []
     _MockHandler.response_queue = []
     srv = HTTPServer(("127.0.0.1", 0), _MockHandler)
@@ -115,8 +115,8 @@ def agent_env():
 
     test_home = tempfile.mkdtemp(prefix="hermes_e2e_47967_")
     os.makedirs(os.path.join(test_home, ".hermes"))
-    prev_home = os.environ.get("HERMES_HOME")
-    os.environ["HERMES_HOME"] = os.path.join(test_home, ".hermes")
+    prev_home = os.environ.get("KINQHI_HOME")
+    os.environ["KINQHI_HOME"] = os.path.join(test_home, ".hermes")
 
     # Import fresh so the patched conversation_loop is exercised even when the
     # module was imported earlier in the same worker.
@@ -140,9 +140,9 @@ def agent_env():
         srv.shutdown()
         shutil.rmtree(test_home, ignore_errors=True)
         if prev_home is None:
-            os.environ.pop("HERMES_HOME", None)
+            os.environ.pop("KINQHI_HOME", None)
         else:
-            os.environ["HERMES_HOME"] = prev_home
+            os.environ["KINQHI_HOME"] = prev_home
 
 
 def _tool_results(handler) -> list[str]:

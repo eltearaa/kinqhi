@@ -1,9 +1,9 @@
-"""OpenAI-compatible shim that forwards Hermes requests to `copilot --acp`.
+"""OpenAI-compatible shim that forwards Kinqhi requests to `copilot --acp`.
 
-This adapter lets Hermes treat the GitHub Copilot ACP server as a chat-style
+This adapter lets Kinqhi treat the GitHub Copilot ACP server as a chat-style
 backend. Each request starts a short-lived ACP session, sends the formatted
 conversation as a single prompt, collects text chunks, and converts the result
-back into the minimal shape Hermes expects from an OpenAI client.
+back into the minimal shape Kinqhi expects from an OpenAI client.
 """
 
 from __future__ import annotations
@@ -55,14 +55,14 @@ def _is_gh_copilot_deprecation_message(stderr_text: str) -> bool:
 
 def _resolve_command() -> str:
     return (
-        os.getenv("HERMES_COPILOT_ACP_COMMAND", "").strip()
+        os.getenv("KINQHI_COPILOT_ACP_COMMAND", "").strip()
         or os.getenv("COPILOT_CLI_PATH", "").strip()
         or "copilot"
     )
 
 
 def _resolve_args() -> list[str]:
-    raw = os.getenv("HERMES_COPILOT_ACP_ARGS", "").strip()
+    raw = os.getenv("KINQHI_COPILOT_ACP_ARGS", "").strip()
     if not raw:
         return ["--acp", "--stdio"]
     return shlex.split(raw)
@@ -88,7 +88,7 @@ def _resolve_home_dir() -> str:
         pass
 
     # Last resort: /tmp (writable on any POSIX system). Avoids crashing the
-    # subprocess with no HOME; callers can set HERMES_HOME explicitly if they
+    # subprocess with no HOME; callers can set KINQHI_HOME explicitly if they
     # need a different writable dir.
     return "/tmp"
 
@@ -97,7 +97,7 @@ def _build_subprocess_env() -> dict[str, str]:
     env = os.environ.copy()
     home = _resolve_home_dir()
     env["HOME"] = home
-    from hermes_constants import apply_subprocess_home_env
+    from kinqhi_constants import apply_subprocess_home_env
     apply_subprocess_home_env(env)
     return env
 
@@ -132,13 +132,13 @@ def _format_messages_as_prompt(
     tool_choice: Any = None,
 ) -> str:
     sections: list[str] = [
-        "You are being used as the active ACP agent backend for Hermes.",
+        "You are being used as the active ACP agent backend for Kinqhi.",
         "Use ACP capabilities to complete tasks.",
         "IMPORTANT: If you take an action with a tool, you MUST output tool calls using <tool_call>{...}</tool_call> blocks with JSON exactly in OpenAI function-call shape.",
         "If no tool is needed, answer normally.",
     ]
     if model:
-        sections.append(f"Hermes requested model hint: {model}")
+        sections.append(f"Kinqhi requested model hint: {model}")
 
     if isinstance(tools, list) and tools:
         tool_specs: list[dict[str, Any]] = []
@@ -443,7 +443,7 @@ class CopilotACPClient:
         except FileNotFoundError as exc:
             raise RuntimeError(
                 f"Could not start Copilot ACP command '{self._acp_command}'. "
-                "Install GitHub Copilot CLI or set HERMES_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
+                "Install GitHub Copilot CLI or set KINQHI_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
             ) from exc
 
         if proc.stdin is None or proc.stdout is None:
@@ -523,17 +523,17 @@ class CopilotACPClient:
             if proc.poll() is not None and stderr_text:
                 if _is_gh_copilot_deprecation_message(stderr_text):
                     raise RuntimeError(
-                        "Hermes ACP mode requires the NEW GitHub Copilot CLI "
+                        "Kinqhi ACP mode requires the NEW GitHub Copilot CLI "
                         "(github.com/github/copilot-cli), but the binary it just "
                         "spawned is the deprecated `gh copilot` extension.\n\n"
                         "Install the new CLI:\n"
                         "  npm install -g @github/copilot\n"
                         "  # then verify with: copilot --help\n\n"
                         "If `copilot` already resolves to the new CLI but you still see this,\n"
-                        "point Hermes at it explicitly:\n"
-                        "  export HERMES_COPILOT_ACP_COMMAND=/path/to/new/copilot\n\n"
+                        "point Kinqhi at it explicitly:\n"
+                        "  export KINQHI_COPILOT_ACP_COMMAND=/path/to/new/copilot\n\n"
                         "Alternative: use the `copilot` provider (no ACP, hits the Copilot API\n"
-                        "directly with a Copilot subscription token) via `hermes setup`.\n\n"
+                        "directly with a Copilot subscription token) via `kinqhi setup`.\n\n"
                         f"Original error:\n{stderr_text}"
                     )
                 raise RuntimeError(f"Copilot ACP process exited early: {stderr_text}")
@@ -551,8 +551,8 @@ class CopilotACPClient:
                         }
                     },
                     "clientInfo": {
-                        "name": "hermes-agent",
-                        "title": "Hermes Agent",
+                        "name": "kinqhi",
+                        "title": "Kinqhi",
                         "version": "0.0.0",
                     },
                 },
@@ -671,7 +671,7 @@ class CopilotACPClient:
             response = _jsonrpc_error(
                 message_id,
                 -32601,
-                f"ACP client method '{method}' is not supported by Hermes yet.",
+                f"ACP client method '{method}' is not supported by Kinqhi yet.",
             )
 
         process.stdin.write(json.dumps(response) + "\n")

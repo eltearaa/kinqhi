@@ -1,4 +1,4 @@
-"""Tests for the Command Installation check in hermes doctor."""
+"""Tests for the Command Installation check in kinqhi doctor."""
 
 import sys
 import types
@@ -7,11 +7,11 @@ from pathlib import Path
 
 import pytest
 
-import hermes_cli.doctor as doctor_mod
+import kinqhi_cli.doctor as doctor_mod
 
 
 def _setup_doctor_env(monkeypatch, tmp_path, venv_name="venv"):
-    """Create a minimal HERMES_HOME + PROJECT_ROOT for doctor tests."""
+    """Create a minimal KINQHI_HOME + PROJECT_ROOT for doctor tests."""
     home = tmp_path / ".hermes"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
@@ -26,7 +26,7 @@ def _setup_doctor_env(monkeypatch, tmp_path, venv_name="venv"):
     hermes_bin.write_text("#!/usr/bin/env python\n# entry point\n")
     hermes_bin.chmod(0o755)
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "KINQHI_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
 
@@ -39,7 +39,7 @@ def _setup_doctor_env(monkeypatch, tmp_path, venv_name="venv"):
 
     # Stub auth checks
     try:
-        from hermes_cli import auth as _auth_mod
+        from kinqhi_cli import auth as _auth_mod
         monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
     except Exception:
@@ -97,7 +97,7 @@ class TestDoctorCommandInstallation:
         assert "Command Installation" in out
         assert "Venv entry point exists" in out
         assert "not found" in out
-        assert "hermes doctor --fix" in out
+        assert "kinqhi doctor --fix" in out
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Symlink check is Unix-only")
     def test_fix_creates_missing_symlink(self, monkeypatch, tmp_path):
@@ -163,7 +163,7 @@ class TestDoctorCommandInstallation:
         project.mkdir(exist_ok=True)
         # Do NOT create any venv entry point
 
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+        monkeypatch.setattr(doctor_mod, "KINQHI_HOME", home)
         monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
         monkeypatch.setattr(doctor_mod, "_DHH", str(home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -174,7 +174,7 @@ class TestDoctorCommandInstallation:
         )
         monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
         try:
-            from hermes_cli import auth as _auth_mod
+            from kinqhi_cli import auth as _auth_mod
             monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
             monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         except Exception:
@@ -215,7 +215,7 @@ class TestDoctorCommandInstallation:
         cmd_link_dir = tmp_path / ".local" / "bin"
         cmd_link_dir.mkdir(parents=True)
         cmd_link = cmd_link_dir / "hermes"
-        cmd_link.write_text("#!/bin/sh\nexec python -m hermes_cli.main \"$@\"\n")
+        cmd_link.write_text("#!/bin/sh\nexec python -m kinqhi_cli.main \"$@\"\n")
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
@@ -248,7 +248,7 @@ class TestDoctorCommandInstallation:
         project = tmp_path / "project"
         project.mkdir(exist_ok=True)
 
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+        monkeypatch.setattr(doctor_mod, "KINQHI_HOME", home)
         monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
         monkeypatch.setattr(doctor_mod, "_DHH", str(home))
         monkeypatch.setattr(sys, "platform", "win32")
@@ -259,7 +259,7 @@ class TestDoctorCommandInstallation:
         )
         monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
         try:
-            from hermes_cli import auth as _auth_mod
+            from kinqhi_cli import auth as _auth_mod
             monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
             monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         except Exception:

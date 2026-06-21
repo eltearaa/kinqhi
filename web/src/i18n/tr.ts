@@ -50,7 +50,7 @@ export const tr: Translations = {
   },
 
   app: {
-    brand: "Hermes Agent",
+    brand: "Kinqhi",
     brandShort: "HA",
     closeNavigation: "Gezintiyi kapat",
     closeModelTools: "Modeli ve araçları kapat",
@@ -120,8 +120,8 @@ export const tr: Translations = {
     starting: "Başlatılıyor",
     startedInBackground: "Arka planda başlatıldı — ilerleme için günlüklere bakın",
     stopped: "Durduruldu",
-    updateHermes: "Hermes'i Güncelle",
-    updatingHermes: "Hermes güncelleniyor…",
+    updateKinqhi: "Kinqhi'i Güncelle",
+    updatingKinqhi: "Kinqhi güncelleniyor…",
     waitingForOutput: "Çıktı bekleniyor…",
   },
 
@@ -320,7 +320,7 @@ export const tr: Translations = {
     enableRuntime: "Etkinleştir",
     forceReinstall: "Yeniden yüklemeyi zorla (önce mevcut klasörü sil)",
     headline:
-      "Hermes eklentilerini keşfedin, yükleyin, etkinleştirin ve güncelleyin (`hermes plugins` ile eşdeğer).",
+      "Kinqhi eklentilerini keşfedin, yükleyin, etkinleştirin ve güncelleyin (`hermes plugins` ile eşdeğer).",
     identifierLabel: "Git URL veya owner/repo",
     inactive: "pasif",
     installBtn: "Yükle",
@@ -337,8 +337,8 @@ export const tr: Translations = {
     providersHint:
       "config.yaml'a memory.provider (boş = yerleşik) ve context.engine yazar. Bir sonraki oturumda etkili olur.",
     refreshDashboard: "Pano uzantılarını yeniden tara",
-    removeConfirm: "Bu eklenti ~/.hermes/plugins/ içinden kaldırılsın mı?",
-    removeHint: "Yalnızca ~/.hermes/plugins altındaki kullanıcı tarafından yüklenmiş eklentiler kaldırılabilir.",
+    removeConfirm: "Bu eklenti ~/.kinqhi/plugins/ içinden kaldırılsın mı?",
+    removeHint: "Yalnızca ~/.kinqhi/plugins altındaki kullanıcı tarafından yüklenmiş eklentiler kaldırılabilir.",
     rescanHeading: "SPA eklenti kayıt defteri",
     rescanHint: "Diske dosya ekledikten sonra yeniden tarayın, böylece pano kenar çubuğu yeni manifestleri algılar.",
     runtimeHeading: "Ağ geçidi çalışma zamanı (YAML eklentileri)",
@@ -360,7 +360,7 @@ export const tr: Translations = {
     all: "Tümü",
     categories: "Kategoriler",
     filters: "Filtreler",
-    noSkills: "Yetenek bulunamadı. Yetenekler ~/.hermes/skills/ adresinden yüklenir",
+    noSkills: "Yetenek bulunamadı. Yetenekler ~/.kinqhi/skills/ adresinden yüklenir",
     noSkillsMatch: "Aramanız veya filtrenizle eşleşen yetenek yok.",
     skillCount: "{count} yetenek{s}",
     resultCount: "{count} sonuç{s}",
@@ -374,7 +374,7 @@ export const tr: Translations = {
   },
 
   config: {
-    configPath: "~/.hermes/config.yaml",
+    configPath: "~/.kinqhi/config.yaml",
     filters: "Filtreler",
     sections: "Bölümler",
     exportConfig: "Yapılandırmayı JSON olarak dışa aktar",
@@ -486,11 +486,11 @@ export const tr: Translations = {
   achievements: {
     hero: {
       kicker: "Agentic Gamerscore",
-      title: "Hermes Achievements",
+      title: "Kinqhi Achievements",
       subtitle:
-        "Gerçek oturum geçmişinden kazanılan, koleksiyonluk Hermes rozetleri. Bilinen ama henüz tamamlanmamış başarılar Keşfedildi olarak gösterilir; Gizli başarılar ilk eşleşen davranış görünene kadar saklı kalır.",
+        "Gerçek oturum geçmişinden kazanılan, koleksiyonluk Kinqhi rozetleri. Bilinen ama henüz tamamlanmamış başarılar Keşfedildi olarak gösterilir; Gizli başarılar ilk eşleşen davranış görünene kadar saklı kalır.",
       scan_subtitle:
-        "Hermes oturum geçmişi taranıyor. Büyük geçmişlerde ilk tarama 5–10 saniye sürebilir.",
+        "Kinqhi oturum geçmişi taranıyor. Büyük geçmişlerde ilk tarama 5–10 saniye sürebilir.",
     },
     actions: {
       rescan: "Yeniden tara",
@@ -505,7 +505,7 @@ export const tr: Translations = {
       highest_tier: "En yüksek kademe",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "En son",
-      latest_hint_empty: "Hermes'i daha çok çalıştır",
+      latest_hint_empty: "Kinqhi'i daha çok çalıştır",
       none_yet: "Henüz yok",
     },
     state: {
@@ -536,10 +536,10 @@ export const tr: Translations = {
       tiers_header: "Kademeler",
       secret_header: "Gizli başarılar",
       secret_body:
-        "Sırlar, tetikleyicilerini saklı tutar. Hermes ilgili bir sinyal gördüğünde kart Keşfedildi durumuna geçer ve gereksinimini gösterir.",
+        "Sırlar, tetikleyicilerini saklı tutar. Kinqhi ilgili bir sinyal gördüğünde kart Keşfedildi durumuna geçer ve gereksinimini gösterir.",
       scan_status_header: "Tarama durumu",
       scan_status_body:
-        "Hermes yerel geçmişi bir kez tarıyor; sonra kartlar otomatik olarak görünür. Birkaç saniye sürmesi normaldir, hiçbir şey takılmadı.",
+        "Kinqhi yerel geçmişi bir kez tarıyor; sonra kartlar otomatik olarak görünür. Birkaç saniye sürmesi normaldir, hiçbir şey takılmadı.",
       what_scanned_header: "Neler taranır",
       what_scanned_body:
         "Oturumlar, araç çağrıları, model meta verileri, hatalar, başarılar ve yerel açılma durumu.",
@@ -586,7 +586,7 @@ export const tr: Translations = {
         "X'te paylaş, yeni sekmede önceden doldurulmuş bir gönderi açar. 1200×630 rozetin eklenmesini istiyorsan önce Görseli kopyala'ya tıkla — X, görseli doğrudan tweet düzenleyiciye yapıştırmana izin verir. PNG indir, dosyayı her yerde kullanmak üzere kaydeder.",
       clipboard_unsupported:
         "Bu tarayıcıda panoya görsel kopyalama desteklenmiyor — bunun yerine İndir'i kullanın.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Hermes Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Kinqhi ☤",
     },
   },
   kanban: {

@@ -145,8 +145,8 @@ export interface Translations {
     starting: string;
     startedInBackground: string;
     stopped: string;
-    updateHermes: string;
-    updatingHermes: string;
+    updateKinqhi: string;
+    updatingKinqhi: string;
     waitingForOutput: string;
   };
 
@@ -560,7 +560,7 @@ export interface Translations {
     fontMono?: string;
   };
 
-  // ── Achievements plugin (plugins/hermes-achievements) ──
+  // ── Achievements plugin (plugins/kinqhi-achievements) ──
   achievements: {
     hero: {
       kicker: string;

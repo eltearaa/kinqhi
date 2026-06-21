@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.psutil_android import (
+from kinqhi_cli.psutil_android import (
     MARKER,
     REPLACEMENT,
     PSUTIL_URL,
@@ -68,7 +68,7 @@ def test_install_psutil_android_compat_uses_patched_tree(tmp_path):
     archive = tmp_path / "psutil.tar.gz"
     _build_psutil_archive(archive, malicious_symlink=False)
 
-    from hermes_cli import main as hermes_main
+    from kinqhi_cli import main as hermes_main
 
     captured: dict[str, object] = {}
 
@@ -89,11 +89,11 @@ def test_install_psutil_android_compat_uses_patched_tree(tmp_path):
          patch.object(hermes_main, "_run_install_with_heartbeat", side_effect=fake_run_install):
         hermes_main._install_psutil_android_compat(
             ["uv", "pip"],
-            env={"HERMES_TEST": "1"},
+            env={"KINQHI_TEST": "1"},
         )
 
     assert captured["cmd"][:4] == ["uv", "pip", "install", "--no-build-isolation"]
-    assert captured["env"] == {"HERMES_TEST": "1"}
+    assert captured["env"] == {"KINQHI_TEST": "1"}
     assert REPLACEMENT in str(captured["common_py"])
 
 

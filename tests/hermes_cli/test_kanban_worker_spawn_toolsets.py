@@ -28,7 +28,7 @@ def test_default_spawn_pins_assignee_profile_cli_toolsets(monkeypatch, tmp_path)
     """Manual profile assignment should keep that profile's CLI tools.
 
     Regression guard for dispatcher-spawned workers that boot with
-    HERMES_KANBAN_TASK: the worker must not collapse to only kanban lifecycle
+    KINQHI_KANBAN_TASK: the worker must not collapse to only kanban lifecycle
     tools when the assigned profile's top-level ``toolsets`` is the default
     composite. The spawned CLI gets an explicit --toolsets pin resolved from
     platform_toolsets.cli; model_tools appends task-scoped kanban tools later.
@@ -50,16 +50,16 @@ platform_toolsets:
     - terminal
     - web
 toolsets:
-  - hermes-cli
+  - kinqhi-cli
 agent:
   disabled_toolsets: []
 """.lstrip(),
         encoding="utf-8",
     )
     root.joinpath("config.yaml").write_text("toolsets:\n  - kanban\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("KINQHI_HOME", str(root))
 
-    from hermes_cli import kanban_db as kb
+    from kinqhi_cli import kanban_db as kb
 
     monkeypatch.setattr(kb, "_resolve_hermes_argv", lambda: ["hermes"])
 
@@ -81,8 +81,8 @@ agent:
     pid = kb._default_spawn(_make_task(kb, assignee="elias"), str(workspace))
 
     assert pid == 4242
-    assert captured["env"]["HERMES_HOME"] == str(profile)
-    assert captured["env"]["HERMES_KANBAN_TASK"] == "t_spawn_tools"
+    assert captured["env"]["KINQHI_HOME"] == str(profile)
+    assert captured["env"]["KINQHI_KANBAN_TASK"] == "t_spawn_tools"
     assert "--toolsets" in captured["cmd"]
     pinned = captured["cmd"][captured["cmd"].index("--toolsets") + 1].split(",")
     for required in ("terminal", "web", "file", "skills", "code_execution", "delegation"):
@@ -101,13 +101,13 @@ platform_toolsets:
     - terminal
     - web
 toolsets:
-  - hermes-cli
+  - kinqhi-cli
 """.lstrip(),
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("KINQHI_HOME", str(root))
 
-    from hermes_cli import kanban_db as kb
+    from kinqhi_cli import kanban_db as kb
 
     resolved = kb._resolve_worker_cli_toolsets(str(profile))
 

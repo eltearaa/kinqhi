@@ -1,4 +1,4 @@
-"""Tests for hermes_cli.gateway."""
+"""Tests for kinqhi_cli.gateway."""
 
 import argparse
 import sys
@@ -6,7 +6,7 @@ from types import ModuleType, SimpleNamespace
 
 import pytest
 
-import hermes_cli.gateway as gateway
+import kinqhi_cli.gateway as gateway
 
 
 def _install_fake_gateway_run(monkeypatch, start_gateway):
@@ -16,12 +16,12 @@ def _install_fake_gateway_run(monkeypatch, start_gateway):
     # ``run_gateway()`` calls ``refresh_systemd_unit_if_needed()`` on every
     # invocation so that restart settings stay current after exit-code-75
     # respawns. That helper writes to ``Path.home() / ".config/systemd/user
-    # /hermes-gateway.service"`` and runs ``systemctl --user daemon-reload``
+    # /kinqhi-gateway.service"`` and runs ``systemctl --user daemon-reload``
     # — both target the *real* user environment because the conftest only
-    # sandboxes ``HERMES_HOME``, not ``HOME``. Tests that drive
+    # sandboxes ``KINQHI_HOME``, not ``HOME``. Tests that drive
     # ``run_gateway()`` end-to-end with a fake ``start_gateway`` MUST stub
     # the refresh call too, or every run rewrites the developer's installed
-    # unit (baking in the test's pytest-tmp ``HERMES_HOME`` value, which
+    # unit (baking in the test's pytest-tmp ``KINQHI_HOME`` value, which
     # systemd then uses on the next boot — silently breaking the gateway
     # for the developer).
     monkeypatch.setattr(gateway, "supports_systemd_services", lambda: False)
@@ -84,7 +84,7 @@ def test_run_gateway_refuses_root_in_official_docker(monkeypatch, tmp_path, caps
 
     monkeypatch.setattr(gateway, "PROJECT_ROOT", project_root)
     monkeypatch.setattr(gateway.os, "geteuid", lambda: 0)
-    monkeypatch.delenv("HERMES_ALLOW_ROOT_GATEWAY", raising=False)
+    monkeypatch.delenv("KINQHI_ALLOW_ROOT_GATEWAY", raising=False)
     monkeypatch.setattr(gateway, "_is_official_docker_checkout", lambda: True)
 
     with pytest.raises(SystemExit) as exc_info:
@@ -92,7 +92,7 @@ def test_run_gateway_refuses_root_in_official_docker(monkeypatch, tmp_path, caps
 
     assert exc_info.value.code == 1
     out = capsys.readouterr().out
-    assert "Refusing to run the Hermes gateway as root" in out
+    assert "Refusing to run the Kinqhi gateway as root" in out
     assert "/opt/hermes/docker/entrypoint.sh" in out
 
 
@@ -107,7 +107,7 @@ def test_run_gateway_root_guard_has_escape_hatch(monkeypatch):
     monkeypatch.setattr(gateway.asyncio, "run", lambda coro: True)
     monkeypatch.setattr(gateway.os, "geteuid", lambda: 0)
     monkeypatch.setattr(gateway, "_is_official_docker_checkout", lambda: True)
-    monkeypatch.setenv("HERMES_ALLOW_ROOT_GATEWAY", "1")
+    monkeypatch.setenv("KINQHI_ALLOW_ROOT_GATEWAY", "1")
 
     gateway.run_gateway(verbose=2, replace=True)
 
@@ -117,7 +117,7 @@ def test_run_gateway_root_guard_has_escape_hatch(monkeypatch):
 def _clear_supervisor_markers(monkeypatch):
     """Make ``_running_under_gateway_supervisor()`` report a plain shell."""
     monkeypatch.delenv("INVOCATION_ID", raising=False)
-    monkeypatch.delenv("HERMES_S6_SUPERVISED_CHILD", raising=False)
+    monkeypatch.delenv("KINQHI_S6_SUPERVISED_CHILD", raising=False)
     # Interactive macOS shells inherit XPC_SERVICE_NAME="0"; launchd jobs get
     # the real label. Default to the shell sentinel so the guard can fire.
     monkeypatch.setenv("XPC_SERVICE_NAME", "0")
@@ -148,7 +148,7 @@ def test_run_gateway_refuses_when_service_supervising(monkeypatch, capsys):
     assert calls == []  # dispatcher never started
     out = capsys.readouterr().out
     assert "already running under systemd (user)" in out
-    assert "hermes gateway restart" in out
+    assert "kinqhi gateway restart" in out
     assert "--force" in out
 
 
@@ -232,7 +232,7 @@ def test_run_gateway_refuses_existing_process_before_importing_gateway_run(monke
     assert calls == []
     out = capsys.readouterr().out
     assert "Another gateway instance is already running (PID 17907)" in out
-    assert "hermes gateway run --replace" in out
+    assert "kinqhi gateway run --replace" in out
 
 
 def test_run_gateway_replace_skips_existing_process_preflight(monkeypatch):
@@ -264,9 +264,9 @@ def test_s6_runtime_snapshot_reports_supervised_service(monkeypatch, tmp_path):
             return True
 
     monkeypatch.setattr(gateway, "is_linux", lambda: True)
-    monkeypatch.setattr("hermes_constants.is_container", lambda: True)
-    monkeypatch.setattr("hermes_cli.service_manager.detect_service_manager", lambda: "s6")
-    monkeypatch.setattr("hermes_cli.service_manager.get_service_manager", lambda: FakeS6Manager())
+    monkeypatch.setattr("kinqhi_constants.is_container", lambda: True)
+    monkeypatch.setattr("kinqhi_cli.service_manager.detect_service_manager", lambda: "s6")
+    monkeypatch.setattr("kinqhi_cli.service_manager.get_service_manager", lambda: FakeS6Manager())
     monkeypatch.setattr(gateway, "find_gateway_pids", lambda: [123])
     monkeypatch.setattr(gateway, "_profile_suffix", lambda: "")
 
@@ -291,12 +291,12 @@ def test_running_under_gateway_supervisor_markers(monkeypatch):
     assert gateway._running_under_gateway_supervisor() is True
 
     monkeypatch.delenv("INVOCATION_ID", raising=False)
-    monkeypatch.setenv("HERMES_S6_SUPERVISED_CHILD", "1")
+    monkeypatch.setenv("KINQHI_S6_SUPERVISED_CHILD", "1")
     assert gateway._running_under_gateway_supervisor() is True
 
 
 def test_gateway_run_force_flag_survives_parser_extraction():
-    from hermes_cli.subcommands.gateway import build_gateway_parser
+    from kinqhi_cli.subcommands.gateway import build_gateway_parser
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command")
@@ -333,7 +333,7 @@ def test_run_gateway_windows_foreground_keeps_ctrl_c_enabled(monkeypatch):
     monkeypatch.setattr(gateway, "is_windows", lambda: True)
     monkeypatch.setattr(gateway, "supports_systemd_services", lambda: False)
     monkeypatch.setattr(gateway.sys, "stdin", _TTY())
-    monkeypatch.delenv("HERMES_GATEWAY_DETACHED", raising=False)
+    monkeypatch.delenv("KINQHI_GATEWAY_DETACHED", raising=False)
     monkeypatch.setattr(gateway.signal, "signal", fake_signal)
     monkeypatch.setattr(gateway.asyncio, "run", lambda coro: True)
 
@@ -363,7 +363,7 @@ def test_run_gateway_windows_detached_absorbs_console_controls(monkeypatch):
     monkeypatch.setattr(gateway, "is_windows", lambda: True)
     monkeypatch.setattr(gateway, "supports_systemd_services", lambda: False)
     monkeypatch.setattr(gateway.sys, "stdin", _TTY())
-    monkeypatch.setenv("HERMES_GATEWAY_DETACHED", "1")
+    monkeypatch.setenv("KINQHI_GATEWAY_DETACHED", "1")
     monkeypatch.setattr(gateway.signal, "signal", fake_signal)
     monkeypatch.setattr(gateway.asyncio, "run", lambda coro: True)
 
@@ -500,14 +500,14 @@ def test_gateway_start_ignores_legacy_platform_selector(monkeypatch):
 def test_gateway_restart_on_windows_without_service_uses_detached_backend(monkeypatch):
     """Windows manual restart must not fall back to foreground run_gateway().
 
-    A Telegram-hosted agent may run `hermes gateway restart` via the terminal
+    A Telegram-hosted agent may run `kinqhi gateway restart` via the terminal
     tool. The generic manual fallback stops the gateway and then calls
     run_gateway() in the same foreground subprocess; on Windows that subprocess
     can be reaped when its gateway parent is terminated, leaving the gateway
     down. The Windows backend restarts via detached pythonw.exe even when no
     Scheduled Task / Startup item is installed.
     """
-    import hermes_cli.gateway_windows as gateway_windows
+    import kinqhi_cli.gateway_windows as gateway_windows
 
     calls = []
 
@@ -535,7 +535,7 @@ def test_gateway_restart_on_windows_without_service_uses_detached_backend(monkey
 
 def test_gateway_restart_on_windows_preserves_failure_fallback(monkeypatch):
     """If the Windows backend cannot launch, keep the existing fallback."""
-    import hermes_cli.gateway_windows as gateway_windows
+    import kinqhi_cli.gateway_windows as gateway_windows
 
     calls = []
 
@@ -559,7 +559,7 @@ def test_gateway_restart_on_windows_preserves_failure_fallback(monkeypatch):
 
 
 def test_systemd_status_warns_when_linger_disabled(monkeypatch, tmp_path, capsys):
-    unit_path = tmp_path / "hermes-gateway.service"
+    unit_path = tmp_path / "kinqhi-gateway.service"
     unit_path.write_text("[Unit]\n")
 
     monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: unit_path)
@@ -589,17 +589,17 @@ def test_systemd_status_warns_when_linger_disabled(monkeypatch, tmp_path, capsys
 
 
 def test_systemd_install_checks_linger_status(monkeypatch, tmp_path, capsys):
-    unit_path = tmp_path / "systemd" / "user" / "hermes-gateway.service"
+    unit_path = tmp_path / "systemd" / "user" / "kinqhi-gateway.service"
 
     monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: unit_path)
     # Synthetic unit with a non-temp home: the real generator bakes the
-    # hermetic test HERMES_HOME (a tmp dir), which the temp-home write
+    # hermetic test KINQHI_HOME (a tmp dir), which the temp-home write
     # guard correctly refuses.
     monkeypatch.setattr(
         gateway,
         "generate_systemd_unit",
         lambda system=False, run_as_user=None: (
-            '[Service]\nEnvironment="HERMES_HOME=/home/alice/.hermes"\n'
+            '[Service]\nEnvironment="KINQHI_HOME=/home/alice/.hermes"\n'
         ),
     )
 
@@ -626,16 +626,16 @@ def test_systemd_install_checks_linger_status(monkeypatch, tmp_path, capsys):
 
 
 def test_systemd_install_can_skip_enable_on_startup(monkeypatch, tmp_path, capsys):
-    unit_path = tmp_path / "systemd" / "user" / "hermes-gateway.service"
+    unit_path = tmp_path / "systemd" / "user" / "kinqhi-gateway.service"
 
     monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: unit_path)
     # Non-temp home so the temp-home write guard (which trips on the
-    # hermetic test HERMES_HOME) stays out of the way.
+    # hermetic test KINQHI_HOME) stays out of the way.
     monkeypatch.setattr(
         gateway,
         "generate_systemd_unit",
         lambda system=False, run_as_user=None: (
-            '[Service]\nEnvironment="HERMES_HOME=/home/alice/.hermes"\n'
+            '[Service]\nEnvironment="KINQHI_HOME=/home/alice/.hermes"\n'
         ),
     )
 
@@ -663,7 +663,7 @@ def test_systemd_install_can_skip_enable_on_startup(monkeypatch, tmp_path, capsy
 
 
 def test_systemd_install_system_scope_skips_linger_and_uses_systemctl(monkeypatch, tmp_path, capsys):
-    unit_path = tmp_path / "etc" / "systemd" / "system" / "hermes-gateway.service"
+    unit_path = tmp_path / "etc" / "systemd" / "system" / "kinqhi-gateway.service"
 
     monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: unit_path)
     monkeypatch.setattr(
@@ -698,8 +698,8 @@ def test_systemd_install_system_scope_skips_linger_and_uses_systemctl(monkeypatc
 
 
 def test_conflicting_systemd_units_warning(monkeypatch, tmp_path, capsys):
-    user_unit = tmp_path / "user" / "hermes-gateway.service"
-    system_unit = tmp_path / "system" / "hermes-gateway.service"
+    user_unit = tmp_path / "user" / "kinqhi-gateway.service"
+    system_unit = tmp_path / "system" / "kinqhi-gateway.service"
     user_unit.parent.mkdir(parents=True)
     system_unit.parent.mkdir(parents=True)
     user_unit.write_text("[Unit]\n", encoding="utf-8")
@@ -715,7 +715,7 @@ def test_conflicting_systemd_units_warning(monkeypatch, tmp_path, capsys):
 
     out = capsys.readouterr().out
     assert "Both user and system gateway services are installed" in out
-    assert "hermes gateway uninstall" in out
+    assert "kinqhi gateway uninstall" in out
     assert "--system" in out
 
 
@@ -729,8 +729,8 @@ def test_install_linux_gateway_from_setup_system_choice_without_root_prints_foll
 
     out = capsys.readouterr().out
     assert (scope, did_install) == ("system", False)
-    assert "sudo hermes gateway install --system --run-as-user alice" in out
-    assert "sudo hermes gateway start --system" in out
+    assert "sudo kinqhi gateway install --system --run-as-user alice" in out
+    assert "sudo kinqhi gateway start --system" in out
 
 
 def test_install_linux_gateway_from_setup_system_choice_as_root_installs(monkeypatch):
@@ -831,7 +831,7 @@ def test_scan_gateway_pids_detects_windows_hermes_exe_case_variants(monkeypatch)
             return SimpleNamespace(
                 returncode=0,
                 stdout=(
-                    "CommandLine=C:\\Program Files\\Hermes\\Hermes.EXE gateway run --replace\n"
+                    "CommandLine=C:\\Program Files\\Kinqhi\\Kinqhi.EXE gateway run --replace\n"
                     "ProcessId=2468\n\n"
                 ),
                 stderr="",
@@ -965,4 +965,4 @@ class TestStopProfileGateway:
 def test_module_has_logger():
     """Verify module has a logger instance (regression guard for #27154)."""
     assert hasattr(gateway, "logger")
-    assert gateway.logger.name == "hermes_cli.gateway"
+    assert gateway.logger.name == "kinqhi_cli.gateway"

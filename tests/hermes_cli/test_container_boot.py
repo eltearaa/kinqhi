@@ -1,8 +1,8 @@
-"""Tests for hermes_cli.container_boot — the cont-init.d-time
+"""Tests for kinqhi_cli.container_boot — the cont-init.d-time
 reconciliation that recreates per-profile gateway s6 service slots
 from the persistent profiles directory.
 
-These tests run against a fake $HERMES_HOME under tmp_path; no real
+These tests run against a fake $KINQHI_HOME under tmp_path; no real
 s6 supervision tree is required. The in-container integration test
 covering end-to-end "docker restart" survival lives in
 tests/docker/test_container_restart.py.
@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.container_boot import (
+from kinqhi_cli.container_boot import (
     ReconcileAction,
     reconcile_profile_gateways,
 )
@@ -26,7 +26,7 @@ from hermes_cli.container_boot import (
 
 
 def _make_profile(
-    hermes_home: Path,
+    kinqhi_home: Path,
     name: str,
     *,
     state: str | None,
@@ -34,8 +34,8 @@ def _make_profile(
     with_pid: bool = False,
     config: bool = True,
 ) -> Path:
-    """Create a fake profile directory under hermes_home/profiles/<name>/."""
-    p = hermes_home / "profiles" / name
+    """Create a fake profile directory under kinqhi_home/profiles/<name>/."""
+    p = kinqhi_home / "profiles" / name
     p.mkdir(parents=True)
     if config:
         # SOUL.md is what the reconciler keys on — it's always seeded by
@@ -57,22 +57,22 @@ def _make_profile(
 
 
 def _seed_default_root(
-    hermes_home: Path,
+    kinqhi_home: Path,
     *,
     state: str | None = None,
     with_pid: bool = False,
 ) -> None:
     """Populate gateway_state.json / stale runtime files at the
-    HERMES_HOME root (the implicit default profile)."""
+    KINQHI_HOME root (the implicit default profile)."""
     if state is not None:
-        (hermes_home / "gateway_state.json").write_text(json.dumps({
+        (kinqhi_home / "gateway_state.json").write_text(json.dumps({
             "gateway_state": state, "timestamp": 1234567890,
         }))
     if with_pid:
-        (hermes_home / "gateway.pid").write_text(json.dumps(
+        (kinqhi_home / "gateway.pid").write_text(json.dumps(
             {"pid": 99999, "host": "old-container"},
         ))
-        (hermes_home / "processes.json").write_text("[]")
+        (kinqhi_home / "processes.json").write_text("[]")
 
 
 def _named_actions(actions: list[ReconcileAction]) -> list[ReconcileAction]:
@@ -91,7 +91,7 @@ def test_running_profile_is_registered_and_autostarted(tmp_path: Path) -> None:
     _make_profile(tmp_path, "coder", state="running")
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert _named_actions(actions) == [ReconcileAction(
@@ -110,7 +110,7 @@ def test_stopped_profile_is_registered_but_not_started(tmp_path: Path) -> None:
     _make_profile(tmp_path, "writer", state="stopped")
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert _named_actions(actions) == [ReconcileAction(
@@ -126,7 +126,7 @@ def test_startup_failed_does_not_autostart(tmp_path: Path) -> None:
     _make_profile(tmp_path, "broken", state="startup_failed")
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     named = _named_actions(actions)
@@ -145,7 +145,7 @@ def test_desired_state_running_autostarts_even_if_runtime_failed(tmp_path: Path)
     )
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert _named_actions(actions) == [ReconcileAction(
@@ -165,7 +165,7 @@ def test_desired_state_stopped_blocks_legacy_running_runtime(tmp_path: Path) -> 
     )
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert _named_actions(actions) == [ReconcileAction(
@@ -181,7 +181,7 @@ def test_starting_state_does_not_autostart(tmp_path: Path) -> None:
     _make_profile(tmp_path, "unlucky", state="starting")
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     named = _named_actions(actions)
@@ -195,7 +195,7 @@ def test_stale_runtime_files_are_removed(tmp_path: Path) -> None:
     assert (profile / "processes.json").exists()
 
     reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert not (profile / "gateway.pid").exists()
@@ -211,7 +211,7 @@ def test_profile_without_state_file_is_registered_but_not_started(
     _make_profile(tmp_path, "fresh", state=None)
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert _named_actions(actions) == [ReconcileAction(
@@ -228,7 +228,7 @@ def test_directory_without_marker_file_is_skipped(tmp_path: Path) -> None:
     (tmp_path / "profiles" / "stray").mkdir(parents=True)
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert _named_actions(actions) == []
@@ -243,7 +243,7 @@ def test_corrupt_state_file_treated_as_no_prior_state(tmp_path: Path) -> None:
     (profile / "gateway_state.json").write_text("{ not valid json")
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     named = _named_actions(actions)
@@ -257,7 +257,7 @@ def test_reconcile_log_is_written(tmp_path: Path) -> None:
     _make_profile(tmp_path, "b", state="stopped")
 
     reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     log = (tmp_path / "logs" / "container-boot.log").read_text()
@@ -273,7 +273,7 @@ def test_reconcile_log_rotates_when_size_exceeded(
 ) -> None:
     """When container-boot.log exceeds _LOG_ROTATE_BYTES, the existing
     file is rotated to .1 before the new entries are appended."""
-    from hermes_cli import container_boot
+    from kinqhi_cli import container_boot
 
     # Tighten the threshold so we don't have to write 256 KiB.
     monkeypatch.setattr(container_boot, "_LOG_ROTATE_BYTES", 200)
@@ -286,7 +286,7 @@ def test_reconcile_log_rotates_when_size_exceeded(
     _make_profile(tmp_path, "coder", state="running")
 
     reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     rotated = tmp_path / "logs" / "container-boot.log.1"
@@ -303,7 +303,7 @@ def test_reconcile_log_does_not_rotate_below_threshold(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A small existing log is appended to in place; no .1 is created."""
-    from hermes_cli import container_boot
+    from kinqhi_cli import container_boot
     monkeypatch.setattr(container_boot, "_LOG_ROTATE_BYTES", 10_000_000)
 
     log_path = tmp_path / "logs" / "container-boot.log"
@@ -314,7 +314,7 @@ def test_reconcile_log_does_not_rotate_below_threshold(
     _make_profile(tmp_path, "coder", state="running")
 
     reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert not (tmp_path / "logs" / "container-boot.log.1").exists()
@@ -329,7 +329,7 @@ def test_reconcile_log_rotation_overwrites_existing_dot1(
 ) -> None:
     """Rotating again replaces the prior .1 — we keep at most one
     rotated file (soft cap of ~2 × threshold)."""
-    from hermes_cli import container_boot
+    from kinqhi_cli import container_boot
     monkeypatch.setattr(container_boot, "_LOG_ROTATE_BYTES", 200)
 
     log_dir = tmp_path / "logs"; log_dir.mkdir()
@@ -340,7 +340,7 @@ def test_reconcile_log_rotation_overwrites_existing_dot1(
     _make_profile(tmp_path, "coder", state="running")
 
     reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     # .1 now contains the previous .log (Ys), not OLD ROTATION.
@@ -354,7 +354,7 @@ def test_dry_run_makes_no_filesystem_changes(tmp_path: Path) -> None:
     profile = _make_profile(tmp_path, "coder", state="running", with_pid=True)
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=True,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=True,
     )
 
     # The action list is still produced...
@@ -370,14 +370,14 @@ def test_dry_run_makes_no_filesystem_changes(tmp_path: Path) -> None:
 def test_missing_profiles_root_still_registers_default_slot(
     tmp_path: Path,
 ) -> None:
-    """When $HERMES_HOME/profiles doesn't exist (fresh install), the
+    """When $KINQHI_HOME/profiles doesn't exist (fresh install), the
     reconciliation should still register a gateway-default slot for
     the root profile and return without raising. Previously this
     returned an empty list; the default slot is now always present
-    so `hermes gateway start` (no -p) has somewhere to land."""
+    so `kinqhi gateway start` (no -p) has somewhere to land."""
     scandir = tmp_path / "run-service"; scandir.mkdir()
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
     assert actions == [ReconcileAction(
         profile="default", prior_state=None, action="registered",
@@ -394,7 +394,7 @@ def test_invalid_profile_name_in_directory_raises(tmp_path: Path) -> None:
     _make_profile(tmp_path, "BadName", state="running")
     with pytest.raises(ValueError):
         reconcile_profile_gateways(
-            hermes_home=tmp_path, scandir=scandir, dry_run=False,
+            kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
         )
 
 
@@ -412,7 +412,7 @@ def test_register_service_publishes_atomically(tmp_path: Path) -> None:
     _make_profile(tmp_path, "coder", state="running")
 
     reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     # No leftover tmp dir.
@@ -434,7 +434,7 @@ def test_register_service_overwrites_existing_slot(tmp_path: Path) -> None:
 
     # First pass.
     reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
     first_run = (scandir / "gateway-coder" / "run").read_text()
 
@@ -445,7 +445,7 @@ def test_register_service_overwrites_existing_slot(tmp_path: Path) -> None:
         '{"gateway_state": "stopped"}',
     )
     reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     # Slot still exists, no .tmp remnants.
@@ -466,7 +466,7 @@ def test_register_service_cleans_up_stale_tmp_dir(tmp_path: Path) -> None:
 
     _make_profile(tmp_path, "coder", state="running")
     reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert not stale_tmp.exists()
@@ -479,12 +479,12 @@ def test_register_service_cleans_up_stale_tmp_dir(tmp_path: Path) -> None:
 
 
 def test_default_slot_always_registered_on_empty_home(tmp_path: Path) -> None:
-    """Bare HERMES_HOME with nothing under it still produces a
+    """Bare KINQHI_HOME with nothing under it still produces a
     gateway-default slot (down state)."""
     scandir = tmp_path / "run-service"; scandir.mkdir()
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert actions == [ReconcileAction(
@@ -498,28 +498,28 @@ def test_default_slot_always_registered_on_empty_home(tmp_path: Path) -> None:
 
 def test_default_slot_run_script_omits_profile_flag(tmp_path: Path) -> None:
     """The default slot's run script must NOT pass `-p default` —
-    that would resolve to $HERMES_HOME/profiles/default/ instead of
-    the root profile. It must call `hermes gateway run` directly."""
+    that would resolve to $KINQHI_HOME/profiles/default/ instead of
+    the root profile. It must call `kinqhi gateway run` directly."""
     scandir = tmp_path / "run-service"; scandir.mkdir()
 
     reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     run = (scandir / "gateway-default" / "run").read_text()
-    assert "hermes gateway run" in run
+    assert "kinqhi gateway run" in run
     assert "-p default" not in run
     assert "-p 'default'" not in run
 
 
 def test_default_slot_autostarts_when_root_state_running(tmp_path: Path) -> None:
-    """gateway_state.json at the HERMES_HOME root with state=running
+    """gateway_state.json at the KINQHI_HOME root with state=running
     means the default slot auto-starts on container boot."""
     scandir = tmp_path / "run-service"; scandir.mkdir()
     _seed_default_root(tmp_path, state="running")
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     default_action = next(a for a in actions if a.profile == "default")
@@ -545,7 +545,7 @@ def test_legacy_gateway_run_cmd_seeds_default_running_state(
     scandir = tmp_path / "run-service"; scandir.mkdir()
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path,
+        kinqhi_home=tmp_path,
         scandir=scandir,
         dry_run=False,
         container_argv=container_argv,
@@ -576,7 +576,7 @@ def test_legacy_gateway_run_no_supervise_does_not_seed_s6_state(
     scandir = tmp_path / "run-service"; scandir.mkdir()
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path,
+        kinqhi_home=tmp_path,
         scandir=scandir,
         dry_run=False,
         container_argv=container_argv,
@@ -595,10 +595,10 @@ def test_legacy_gateway_run_env_no_supervise_does_not_seed_s6_state(
 ) -> None:
     """Env opt-out matches the CLI `--no-supervise` flag."""
     scandir = tmp_path / "run-service"; scandir.mkdir()
-    monkeypatch.setenv("HERMES_GATEWAY_NO_SUPERVISE", "1")
+    monkeypatch.setenv("KINQHI_GATEWAY_NO_SUPERVISE", "1")
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path,
+        kinqhi_home=tmp_path,
         scandir=scandir,
         dry_run=False,
         container_argv=("gateway", "run"),
@@ -618,7 +618,7 @@ def test_default_slot_does_not_autostart_when_root_state_stopped(
     _seed_default_root(tmp_path, state="stopped")
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path,
+        kinqhi_home=tmp_path,
         scandir=scandir,
         dry_run=False,
         container_argv=("gateway", "run"),
@@ -639,7 +639,7 @@ def test_default_slot_does_not_autostart_when_root_state_startup_failed(
     _seed_default_root(tmp_path, state="startup_failed")
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     default_action = next(a for a in actions if a.profile == "default")
@@ -649,7 +649,7 @@ def test_default_slot_does_not_autostart_when_root_state_startup_failed(
 def test_default_slot_cleans_up_stale_runtime_files_at_root(
     tmp_path: Path,
 ) -> None:
-    """gateway.pid and processes.json at the HERMES_HOME root (left
+    """gateway.pid and processes.json at the KINQHI_HOME root (left
     over from the previous container's default gateway) must be
     swept the same way as for named profiles."""
     scandir = tmp_path / "run-service"; scandir.mkdir()
@@ -657,7 +657,7 @@ def test_default_slot_cleans_up_stale_runtime_files_at_root(
     assert (tmp_path / "gateway.pid").exists()
 
     reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert not (tmp_path / "gateway.pid").exists()
@@ -673,7 +673,7 @@ def test_default_slot_appears_before_named_profiles(tmp_path: Path) -> None:
     _make_profile(tmp_path, "a-first-alphabetically", state="stopped")
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     assert [a.profile for a in actions] == [
@@ -696,7 +696,7 @@ def test_profiles_default_subdir_is_skipped_with_warning(
     _make_profile(tmp_path, "default", state="running")
 
     actions = reconcile_profile_gateways(
-        hermes_home=tmp_path, scandir=scandir, dry_run=False,
+        kinqhi_home=tmp_path, scandir=scandir, dry_run=False,
     )
 
     # Only the root-profile default slot appears — not the colliding
@@ -739,7 +739,7 @@ def test_is_dashboard_container_true_for_dashboard_argv(
     container_argv: tuple[str, ...],
 ) -> None:
     """A dashboard command is detected across every wrapper prefix shape."""
-    from hermes_cli.container_boot import _is_dashboard_container
+    from kinqhi_cli.container_boot import _is_dashboard_container
 
     assert _is_dashboard_container(container_argv) is True
 
@@ -762,7 +762,7 @@ def test_is_dashboard_container_false_for_non_dashboard_argv(
     container_argv: tuple[str, ...],
 ) -> None:
     """Gateway / other commands (and empty argv) are not the dashboard."""
-    from hermes_cli.container_boot import _is_dashboard_container
+    from kinqhi_cli.container_boot import _is_dashboard_container
 
     assert _is_dashboard_container(container_argv) is False
 
@@ -778,11 +778,11 @@ def test_main_skips_reconcile_in_dashboard_container(
     the gateway-<profile> slot. Asserting the slot is absent proves the
     skip is real, not just a log line.
     """
-    from hermes_cli import container_boot
+    from kinqhi_cli import container_boot
 
     scandir = tmp_path / "run-service"; scandir.mkdir()
     _make_profile(tmp_path, "worker", state="running")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
     monkeypatch.setenv("S6_PROFILE_GATEWAY_SCANDIR", str(scandir))
     monkeypatch.setattr(
         container_boot,
@@ -804,11 +804,11 @@ def test_main_reconciles_in_gateway_container(
 ) -> None:
     """main() reconciles normally when PID 1 argv is the gateway command —
     the dashboard skip is scoped strictly to the dashboard role."""
-    from hermes_cli import container_boot
+    from kinqhi_cli import container_boot
 
     scandir = tmp_path / "run-service"; scandir.mkdir()
     _make_profile(tmp_path, "worker", state="running")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
     monkeypatch.setenv("S6_PROFILE_GATEWAY_SCANDIR", str(scandir))
     monkeypatch.setattr(
         container_boot,
@@ -828,16 +828,16 @@ def test_main_ignores_removed_skip_reconcile_env_var(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The legacy HERMES_SKIP_PROFILE_RECONCILE flag is gone: setting it on a
+    """The legacy KINQHI_SKIP_PROFILE_RECONCILE flag is gone: setting it on a
     gateway container must NOT suppress reconciliation. Role is decided by
     PID 1 argv alone, so a stale flag in someone's manifest is inert."""
-    from hermes_cli import container_boot
+    from kinqhi_cli import container_boot
 
     scandir = tmp_path / "run-service"; scandir.mkdir()
     _make_profile(tmp_path, "worker", state="running")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
     monkeypatch.setenv("S6_PROFILE_GATEWAY_SCANDIR", str(scandir))
-    monkeypatch.setenv("HERMES_SKIP_PROFILE_RECONCILE", "1")
+    monkeypatch.setenv("KINQHI_SKIP_PROFILE_RECONCILE", "1")
     monkeypatch.setattr(
         container_boot,
         "_read_container_argv",

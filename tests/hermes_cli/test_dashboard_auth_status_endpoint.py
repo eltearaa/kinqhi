@@ -16,9 +16,9 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from hermes_cli import web_server
-from hermes_cli.dashboard_auth import clear_providers, register_provider
-from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
+from kinqhi_cli import web_server
+from kinqhi_cli.dashboard_auth import clear_providers, register_provider
+from tests.kinqhi_cli.conftest_dashboard_auth import StubAuthProvider
 
 # These tests mutate ``web_server.app.state.auth_required`` so they share
 # the same xdist group as the other dashboard-auth gated_app tests.
@@ -88,7 +88,7 @@ def test_status_preserves_existing_fields(loopback_client):
     r = loopback_client.get("/api/status")
     body = r.json()
     expected_keys = {
-        "version", "release_date", "hermes_home", "config_path", "env_path",
+        "version", "release_date", "kinqhi_home", "config_path", "env_path",
         "config_version", "latest_config_version", "gateway_running",
         "gateway_pid", "gateway_health_url", "gateway_state",
         "gateway_platforms", "gateway_exit_reason", "gateway_updated_at",
@@ -103,7 +103,7 @@ def test_status_preserves_existing_fields(loopback_client):
 # (it is in ``PUBLIC_API_PATHS``), so on a network-exposed bind it must not
 # leak that detail to anonymous callers.
 _HOST_DETAIL_FIELDS = frozenset({
-    "hermes_home", "config_path", "env_path", "gateway_pid",
+    "kinqhi_home", "config_path", "env_path", "gateway_pid",
     "gateway_health_url",
 })
 

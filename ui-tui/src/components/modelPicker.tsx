@@ -241,7 +241,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
                         authenticated: false,
                         models: [],
                         total_models: 0,
-                        warning: p.key_env ? `paste ${p.key_env} to activate` : 'run `hermes model` to configure'
+                        warning: p.key_env ? `paste ${p.key_env} to activate` : 'run `kinqhi model` to configure'
                       }
                     : p
                 )
@@ -313,7 +313,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
             setFilter('')
           }
 
-          // Other auth types: no-op (warning shown tells them to run hermes model)
+          // Other auth types: no-op (warning shown tells them to run kinqhi model)
           return
         }
 
@@ -410,7 +410,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
-          Paste your API key below (saved to ~/.hermes/.env)
+          Paste your API key below (saved to ~/.kinqhi/.env)
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">

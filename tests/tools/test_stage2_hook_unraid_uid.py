@@ -63,7 +63,7 @@ def test_uid_gid_validator_rejects_root_invalid_and_out_of_range(
 
 def _targeted_chown_subdirs(text: str) -> list[str]:
     m = re.search(
-        r"for sub in (?P<items>.*?); do\n\s*if \[ -e \"\$HERMES_HOME/\$sub\" \]",
+        r"for sub in (?P<items>.*?); do\n\s*if \[ -e \"\$KINQHI_HOME/\$sub\" \]",
         text,
         re.DOTALL,
     )
@@ -82,5 +82,5 @@ def test_seeded_directory_list_covers_legacy_and_new_pairing_dirs(stage2_text: s
         "# --- Install-method stamp",
         1,
     )[0]
-    assert '"$HERMES_HOME/pairing"' in seed_block
-    assert '"$HERMES_HOME/platforms/pairing"' in seed_block
+    assert '"$KINQHI_HOME/pairing"' in seed_block
+    assert '"$KINQHI_HOME/platforms/pairing"' in seed_block

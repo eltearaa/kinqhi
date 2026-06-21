@@ -80,7 +80,7 @@ _DESTRUCTIVE_ACTIONS = frozenset({
 })
 
 # Hard-blocked key combinations. Mirrored from #4562 — these are destructive
-# regardless of approval level (e.g. logout kills the session Hermes runs in).
+# regardless of approval level (e.g. logout kills the session Kinqhi runs in).
 _BLOCKED_KEY_COMBOS = {
     frozenset({"cmd", "shift", "backspace"}),   # empty trash
     frozenset({"cmd", "option", "backspace"}),   # force delete
@@ -132,14 +132,14 @@ def _get_backend() -> ComputerUseBackend:
     global _backend
     with _backend_lock:
         if _backend is None:
-            backend_name = os.environ.get("HERMES_COMPUTER_USE_BACKEND", "cua").lower()
+            backend_name = os.environ.get("KINQHI_COMPUTER_USE_BACKEND", "cua").lower()
             if backend_name in {"cua", "cua-driver", ""}:
                 from tools.computer_use.cua_backend import CuaDriverBackend
                 _backend = CuaDriverBackend()
             elif backend_name == "noop":  # pragma: no cover
                 _backend = _NoopBackend()
             else:
-                raise RuntimeError(f"Unknown HERMES_COMPUTER_USE_BACKEND={backend_name!r}")
+                raise RuntimeError(f"Unknown KINQHI_COMPUTER_USE_BACKEND={backend_name!r}")
             _backend.start()
         return _backend
 
@@ -253,7 +253,7 @@ def handle_computer_use(args: Dict[str, Any], **kwargs) -> Any:
     except Exception as e:
         return json.dumps({
             "error": f"computer_use backend unavailable: {e}",
-            "hint": "Run `hermes tools` and enable Computer Use to install cua-driver.",
+            "hint": "Run `kinqhi tools` and enable Computer Use to install cua-driver.",
         })
 
     try:
@@ -624,7 +624,7 @@ def _should_route_through_aux_vision() -> bool:
     """
     try:
         from agent.auxiliary_client import _read_main_model, _read_main_provider
-        from hermes_cli.config import load_config
+        from kinqhi_cli.config import load_config
         from tools.computer_use.vision_routing import (
             should_route_capture_to_aux_vision,
         )
@@ -651,7 +651,7 @@ def _route_capture_through_aux_vision(
 ) -> Optional[str]:
     """Pre-analyse the captured PNG via ``vision_analyze`` and return a text result.
 
-    The captured base64 PNG is materialised to ``$HERMES_HOME/cache/vision/``
+    The captured base64 PNG is materialised to ``$KINQHI_HOME/cache/vision/``
     and handed to ``vision_analyze_tool`` with a generic describe prompt.
     The resulting text description is merged into the existing AX/SOM
     summary so the main model receives a single text payload that mentions
@@ -669,7 +669,7 @@ def _route_capture_through_aux_vision(
         import os as _os
         import uuid as _uuid
 
-        from hermes_constants import get_hermes_dir
+        from kinqhi_constants import get_kinqhi_dir
         from model_tools import _run_async
         vision_analyze_tool = None  # vision removed
     except Exception as exc:  # pragma: no cover - defensive
@@ -687,7 +687,7 @@ def _route_capture_through_aux_vision(
         # Pick an extension that matches the on-disk bytes so vision_analyze's
         # MIME sniffing returns the right content-type.
         ext = ".jpg" if cap.png_b64[:8].startswith("/9j/") else ".png"
-        cache_dir = get_hermes_dir("cache/vision", "temp_vision_images")
+        cache_dir = get_kinqhi_dir("cache/vision", "temp_vision_images")
         cache_dir.mkdir(parents=True, exist_ok=True)
         temp_image_path = cache_dir / f"computer_use_{_uuid.uuid4().hex}{ext}"
         temp_image_path.write_bytes(raw)

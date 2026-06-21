@@ -32,15 +32,15 @@ from fastapi import FastAPI
 from fastapi.responses import Response
 from fastapi.testclient import TestClient
 
-from hermes_cli import web_server
-from hermes_cli.dashboard_auth import clear_providers, register_provider
-from hermes_cli.dashboard_auth.cookies import (
+from kinqhi_cli import web_server
+from kinqhi_cli.dashboard_auth import clear_providers, register_provider
+from kinqhi_cli.dashboard_auth.cookies import (
     SESSION_AT_COOKIE,
     SESSION_RT_COOKIE,
     clear_session_cookies,
     set_session_cookies,
 )
-from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
+from tests.kinqhi_cli.conftest_dashboard_auth import StubAuthProvider
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +220,7 @@ class TestTransparentRefreshOnAccessTokenEviction:
         signature + exp), then send ONLY that RT cookie.
         """
         import time as _t
-        from tests.hermes_cli.conftest_dashboard_auth import _sign
+        from tests.kinqhi_cli.conftest_dashboard_auth import _sign
 
         clear_providers()
         provider = StubAuthProvider(default_ttl=900)
@@ -273,7 +273,7 @@ class TestTransparentRefreshOnAccessTokenEviction:
         gated_app.cookies.clear()
         # A syntactically-real but expired RT (signed with exp<=now).
         import time as _t
-        from tests.hermes_cli.conftest_dashboard_auth import _sign
+        from tests.kinqhi_cli.conftest_dashboard_auth import _sign
         dead_rt = _sign({"sub": "u", "kind": "refresh", "exp": int(_t.time()) - 1})
         gated_app.cookies.set(SESSION_RT_COOKIE, dead_rt)
         r = gated_app.get("/api/sessions")
@@ -331,7 +331,7 @@ class TestNextSameOriginValidation:
         assert "//evil" not in location
 
     def test_safe_next_validator_accepts_same_origin(self):
-        from hermes_cli.dashboard_auth.middleware import _safe_next_target
+        from kinqhi_cli.dashboard_auth.middleware import _safe_next_target
 
         class FakeRequest:
             def __init__(self, path, query=""):
@@ -344,7 +344,7 @@ class TestNextSameOriginValidation:
         )
 
     def test_safe_next_validator_rejects_protocol_relative(self):
-        from hermes_cli.dashboard_auth.middleware import _safe_next_target
+        from kinqhi_cli.dashboard_auth.middleware import _safe_next_target
 
         class FakeRequest:
             def __init__(self, path):
@@ -353,7 +353,7 @@ class TestNextSameOriginValidation:
         assert _safe_next_target(FakeRequest("//evil.com")) == ""
 
     def test_safe_next_validator_rejects_login_loop(self):
-        from hermes_cli.dashboard_auth.middleware import _safe_next_target
+        from kinqhi_cli.dashboard_auth.middleware import _safe_next_target
 
         class FakeRequest:
             def __init__(self, path):
@@ -370,7 +370,7 @@ class TestNextSameOriginValidation:
         OAuth shows raw JSON instead of the dashboard. This is the bug
         fix that closes the analytics-page redirect mishap.
         """
-        from hermes_cli.dashboard_auth.middleware import _safe_next_target
+        from kinqhi_cli.dashboard_auth.middleware import _safe_next_target
 
         class FakeRequest:
             def __init__(self, path, query=""):
@@ -392,7 +392,7 @@ class TestNextSameOriginValidation:
     def test_safe_next_validator_does_not_reject_api_prefix_lookalikes(self):
         """Negative guard: ``/api-docs`` or ``/apis`` aren't ``/api/*``
         and must remain valid landing targets."""
-        from hermes_cli.dashboard_auth.middleware import _safe_next_target
+        from kinqhi_cli.dashboard_auth.middleware import _safe_next_target
 
         class FakeRequest:
             def __init__(self, path):
@@ -587,7 +587,7 @@ class TestValidatePostLoginTarget:
     """
 
     def test_accepts_same_origin_paths(self):
-        from hermes_cli.dashboard_auth.routes import _validate_post_login_target
+        from kinqhi_cli.dashboard_auth.routes import _validate_post_login_target
         assert _validate_post_login_target("/sessions") == "/sessions"
         # URL-encoded form (as the cookie carries it) round-trips through
         # the validator's unquote step.
@@ -597,12 +597,12 @@ class TestValidatePostLoginTarget:
         )
 
     def test_rejects_protocol_relative(self):
-        from hermes_cli.dashboard_auth.routes import _validate_post_login_target
+        from kinqhi_cli.dashboard_auth.routes import _validate_post_login_target
         assert _validate_post_login_target("//evil.com") == ""
         assert _validate_post_login_target("%2F%2Fevil.com") == ""
 
     def test_rejects_login_loop(self):
-        from hermes_cli.dashboard_auth.routes import _validate_post_login_target
+        from kinqhi_cli.dashboard_auth.routes import _validate_post_login_target
         assert _validate_post_login_target("/login") == ""
         assert _validate_post_login_target("/auth/login") == ""
         assert _validate_post_login_target("/api/auth/me") == ""
@@ -611,7 +611,7 @@ class TestValidatePostLoginTarget:
         """Bug fix: any ``/api/*`` target is dropped at the callback
         boundary. Pin both the exact match and the trailing-slash forms
         plus a few realistic SPA-API endpoints."""
-        from hermes_cli.dashboard_auth.routes import _validate_post_login_target
+        from kinqhi_cli.dashboard_auth.routes import _validate_post_login_target
         assert _validate_post_login_target("/api") == ""
         assert _validate_post_login_target("/api/analytics/models") == ""
         assert _validate_post_login_target("/api/analytics/models?days=30") == ""
@@ -625,7 +625,7 @@ class TestValidatePostLoginTarget:
         )
 
     def test_does_not_reject_api_prefix_lookalikes(self):
-        from hermes_cli.dashboard_auth.routes import _validate_post_login_target
+        from kinqhi_cli.dashboard_auth.routes import _validate_post_login_target
         # SPA route lookalikes — must NOT be dropped.
         assert _validate_post_login_target("/apidocs") == "/apidocs"
         assert _validate_post_login_target("/api-keys") == "/api-keys"
@@ -649,13 +649,13 @@ class TestRenderLoginHtmlNext:
         clear_providers()
 
     def test_no_next_emits_plain_button(self):
-        from hermes_cli.dashboard_auth.login_page import render_login_html
+        from kinqhi_cli.dashboard_auth.login_page import render_login_html
         html_out = render_login_html()
         assert 'href="/auth/login?provider=stub"' in html_out
         assert "next=" not in html_out
 
     def test_next_threaded_url_encoded(self):
-        from hermes_cli.dashboard_auth.login_page import render_login_html
+        from kinqhi_cli.dashboard_auth.login_page import render_login_html
         html_out = render_login_html(next_path="/sessions?page=2")
         # next= is URL-encoded — quote(safe='') turns "/" into "%2F",
         # "?" into "%3F", "=" into "%3D". The encoded value never
@@ -668,7 +668,7 @@ class TestRenderLoginHtmlNext:
         """Defence in depth: even though the caller validates next_path,
         we still HTML-escape the rendered value so a regression in the
         caller can't trivially produce an HTML-injection sink."""
-        from hermes_cli.dashboard_auth.login_page import render_login_html
+        from kinqhi_cli.dashboard_auth.login_page import render_login_html
         # `"` in a path is already URL-encoded by quote() to %22, so it
         # never reaches the HTML escaper as a raw quote. This test pins
         # both layers: quote() does its job AND escape() does its.

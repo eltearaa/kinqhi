@@ -71,7 +71,7 @@ async def _send_discord(
 def _discord_entry():
     """Return the live Discord PlatformEntry, importing lazily so plugin
     discovery is forced exactly once and patches survive across tests."""
-    from hermes_cli.plugins import discover_plugins
+    from kinqhi_cli.plugins import discover_plugins
     from gateway.platform_registry import platform_registry
     discover_plugins()
     return platform_registry.get("discord")
@@ -118,7 +118,7 @@ class _patch_discord_sender:
 def _slack_entry():
     """Return the live Slack PlatformEntry, importing lazily so plugin
     discovery is forced exactly once and patches survive across tests."""
-    from hermes_cli.plugins import discover_plugins
+    from kinqhi_cli.plugins import discover_plugins
     from gateway.platform_registry import platform_registry
     discover_plugins()
     return platform_registry.get("slack")
@@ -274,8 +274,8 @@ class TestSendMessageTool:
         with patch.dict(
             os.environ,
             {
-                "HERMES_CRON_AUTO_DELIVER_PLATFORM": "telegram",
-                "HERMES_CRON_AUTO_DELIVER_CHAT_ID": "-1001",
+                "KINQHI_CRON_AUTO_DELIVER_PLATFORM": "telegram",
+                "KINQHI_CRON_AUTO_DELIVER_CHAT_ID": "-1001",
             },
             clear=False,
         ), \
@@ -455,8 +455,8 @@ class TestSendMessageTool:
              patch("gateway.session_context.get_session_env") as get_session_env_mock, \
              patch("gateway.mirror.mirror_to_session", return_value=True) as mirror_mock:
             get_session_env_mock.side_effect = lambda name, default="": {
-                "HERMES_SESSION_PLATFORM": "telegram",
-                "HERMES_SESSION_USER_ID": "user-123",
+                "KINQHI_SESSION_PLATFORM": "telegram",
+                "KINQHI_SESSION_USER_ID": "user-123",
             }.get(name, default)
             result = json.loads(
                 send_message_tool(
@@ -484,8 +484,8 @@ class TestSendMessageTool:
         # not auto-accepted by the trust window. (Recency trust is covered
         # in test_platform_base.py. The public default flipped to non-strict
         # in 2026-05; this test pins strict on explicitly.)
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("KINQHI_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_FILES", "0")
         config, telegram_cfg = _make_config()
         secret = tmp_path / "secret.pdf"
         secret.write_bytes(b"%PDF secret")
@@ -689,7 +689,7 @@ class TestSendToPlatformChunking:
                     Platform.SLACK,
                     SimpleNamespace(enabled=True, token="***", extra={}),
                     "C123",
-                    "**hello** from [Hermes](<https://example.com>)",
+                    "**hello** from [Kinqhi](<https://example.com>)",
                 )
             )
 
@@ -697,7 +697,7 @@ class TestSendToPlatformChunking:
         send.assert_awaited_once_with(
             "***",
             "C123",
-            "*hello* from <https://example.com|Hermes>",
+            "*hello* from <https://example.com|Kinqhi>",
             thread_ts=None,
         )
 
@@ -836,7 +836,7 @@ class TestSendToPlatformChunking:
 
         Post-#41112 the lightweight text path flows through the matrix plugin's
         registry standalone_sender_fn (not the via-adapter media path)."""
-        from hermes_cli.plugins import discover_plugins
+        from kinqhi_cli.plugins import discover_plugins
         from gateway.platform_registry import platform_registry
         discover_plugins()
         helper = AsyncMock()
@@ -923,7 +923,7 @@ class TestSendToPlatformWhatsapp:
         """WhatsApp delivery routes through the plugin's registry
         standalone_sender_fn (was tools.send_message_tool._send_whatsapp
         before the #41112 plugin migration)."""
-        from hermes_cli.plugins import discover_plugins
+        from kinqhi_cli.plugins import discover_plugins
         from gateway.platform_registry import platform_registry
         discover_plugins()
         chat_id = "test-user@lid"
@@ -2712,8 +2712,8 @@ class _FakePlatform:
 class TestSendViaAdapterStandaloneFallback:
     """Coverage for the out-of-process plugin-platform send path.
 
-    When the gateway runner is not in this process (e.g. ``hermes cron``
-    runs separately from ``hermes gateway``), ``_send_via_adapter`` should
+    When the gateway runner is not in this process (e.g. ``kinqhi cron``
+    runs separately from ``kinqhi gateway``), ``_send_via_adapter`` should
     fall through to the plugin's ``standalone_sender_fn`` registered on
     its ``PlatformEntry``.  Without the hook, the existing error string
     is returned (with a more helpful tail).
@@ -2914,61 +2914,61 @@ class TestCheckSendMessage:
     """The tool's check_fn governs whether the model sees ``send_message`` as
     callable for a given session. The four passing conditions are:
 
-    1. ``HERMES_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
+    1. ``KINQHI_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
        — parent gateway is by definition running, but the worker's
-       ``HERMES_HOME`` may be a profile dir without a ``gateway.pid``).
-    2. ``HERMES_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
+       ``KINQHI_HOME`` may be a profile dir without a ``gateway.pid``).
+    2. ``KINQHI_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
        (the session is wired to a messaging platform like Telegram).
     3. ``is_gateway_running()`` returns True (CLI / orchestrator profile with
-       a live gateway colocated under the same ``HERMES_HOME``).
+       a live gateway colocated under the same ``KINQHI_HOME``).
     4. None of the above → False, tool is hidden.
     """
 
     def test_kanban_task_env_grants_access(self, monkeypatch):
-        """Workers spawned by the dispatcher (HERMES_KANBAN_TASK set) must be
+        """Workers spawned by the dispatcher (KINQHI_KANBAN_TASK set) must be
         allowed regardless of session_platform / gateway-pid state."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_abc12345")
-        monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
+        monkeypatch.setenv("KINQHI_KANBAN_TASK", "t_abc12345")
+        monkeypatch.delenv("KINQHI_SESSION_PLATFORM", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=False):
             assert _check_send_message() is True
 
     def test_kanban_task_env_short_circuits_before_gateway_check(self, monkeypatch):
-        """Honoring HERMES_KANBAN_TASK must not depend on importing or calling
-        gateway.status — the worker may run with a HERMES_HOME that has no
+        """Honoring KINQHI_KANBAN_TASK must not depend on importing or calling
+        gateway.status — the worker may run with a KINQHI_HOME that has no
         gateway.pid, and we don't want that import path to be load-bearing."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_abc12345")
+        monkeypatch.setenv("KINQHI_KANBAN_TASK", "t_abc12345")
 
         with patch("gateway.session_context.get_session_env",
                    side_effect=AssertionError("session_context not consulted "
-                                              "when HERMES_KANBAN_TASK is set")), \
+                                              "when KINQHI_KANBAN_TASK is set")), \
              patch("gateway.status.is_gateway_running",
                    side_effect=AssertionError("gateway.status not consulted "
-                                              "when HERMES_KANBAN_TASK is set")):
+                                              "when KINQHI_KANBAN_TASK is set")):
             assert _check_send_message() is True
 
     def test_messaging_platform_session_grants_access(self, monkeypatch):
         """Telegram/Discord/etc. sessions pass via the platform branch even
-        without HERMES_KANBAN_TASK."""
+        without KINQHI_KANBAN_TASK."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("KINQHI_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value="telegram"), \
              patch("gateway.status.is_gateway_running", return_value=False):
             assert _check_send_message() is True
 
     def test_local_platform_falls_through_to_gateway_check(self, monkeypatch):
-        """``HERMES_SESSION_PLATFORM=local`` means CLI-style — must defer to
+        """``KINQHI_SESSION_PLATFORM=local`` means CLI-style — must defer to
         is_gateway_running() rather than auto-grant."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("KINQHI_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value="local"), \
              patch("gateway.status.is_gateway_running", return_value=True) as gw_mock:
@@ -2980,7 +2980,7 @@ class TestCheckSendMessage:
         gateway: tool is callable."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("KINQHI_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=True):
@@ -2990,7 +2990,7 @@ class TestCheckSendMessage:
         """No kanban task, no platform, no gateway: tool is hidden."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("KINQHI_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=False):
@@ -3001,7 +3001,7 @@ class TestCheckSendMessage:
         install), the check returns False rather than raising."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("KINQHI_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running",

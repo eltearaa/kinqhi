@@ -5,7 +5,7 @@ prefix (e.g. ``mission-control.tilos.com/hermes/*`` -> local Caddy ->
 :9119), injecting ``X-Forwarded-Prefix: /hermes`` on every request.
 
 The dashboard already honours this for the SPA bundle (rewriting asset
-URLs and the bootstrap ``__HERMES_BASE_PATH__``). The OAuth gate must
+URLs and the bootstrap ``__KINQHI_BASE_PATH__``). The OAuth gate must
 honour it too:
 
   1. The gate's ``Location:`` redirect to /login (in
@@ -38,9 +38,9 @@ pytestmark = pytest.mark.xdist_group("dashboard_auth_app_state")
 
 from fastapi.testclient import TestClient
 
-from hermes_cli import web_server
-from hermes_cli.dashboard_auth import clear_providers, register_provider
-from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
+from kinqhi_cli import web_server
+from kinqhi_cli.dashboard_auth import clear_providers, register_provider
+from tests.kinqhi_cli.conftest_dashboard_auth import StubAuthProvider
 
 
 @pytest.fixture
@@ -204,13 +204,13 @@ class TestOAuthRedirectUriRespectsPrefix:
 
 
 # ---------------------------------------------------------------------------
-# HERMES_DASHBOARD_PUBLIC_URL / dashboard.public_url override
+# KINQHI_DASHBOARD_PUBLIC_URL / dashboard.public_url override
 # ---------------------------------------------------------------------------
 
 
 class TestPublicUrlOverride:
     """``dashboard.public_url`` (env override:
-    ``HERMES_DASHBOARD_PUBLIC_URL``) lets an operator force the absolute
+    ``KINQHI_DASHBOARD_PUBLIC_URL``) lets an operator force the absolute
     base URL the OAuth ``redirect_uri`` is built from.
 
     When set, it is the *complete authority* — scheme + host + optional
@@ -234,7 +234,7 @@ class TestPublicUrlOverride:
 
     @pytest.fixture
     def patch_config(self, monkeypatch):
-        """Replace ``hermes_cli.config.load_config`` with a stub
+        """Replace ``kinqhi_cli.config.load_config`` with a stub
         returning the given ``public_url``. Pass ``None`` to set no
         config-side value."""
 
@@ -243,7 +243,7 @@ class TestPublicUrlOverride:
             if public_url is not None:
                 cfg = {"dashboard": {"public_url": public_url}}
             monkeypatch.setattr(
-                "hermes_cli.config.load_config", lambda: cfg
+                "kinqhi_cli.config.load_config", lambda: cfg
             )
 
         return _set
@@ -263,12 +263,12 @@ class TestPublicUrlOverride:
     def test_public_url_env_overrides_request_reconstruction(
         self, gated_app_direct, patch_config, monkeypatch
     ):
-        """``HERMES_DASHBOARD_PUBLIC_URL`` wins over the URL the
+        """``KINQHI_DASHBOARD_PUBLIC_URL`` wins over the URL the
         request would otherwise reconstruct to. Critical for deploys
         whose proxy headers don't match the public URL."""
         patch_config(None)
         monkeypatch.setenv(
-            "HERMES_DASHBOARD_PUBLIC_URL", "https://custom.example",
+            "KINQHI_DASHBOARD_PUBLIC_URL", "https://custom.example",
         )
         redirect_uri = self._redirect_uri(gated_app_direct)
         assert redirect_uri == "https://custom.example/auth/callback", (
@@ -279,7 +279,7 @@ class TestPublicUrlOverride:
     def test_public_url_config_yaml_used_when_env_unset(
         self, gated_app_direct, patch_config, monkeypatch
     ):
-        monkeypatch.delenv("HERMES_DASHBOARD_PUBLIC_URL", raising=False)
+        monkeypatch.delenv("KINQHI_DASHBOARD_PUBLIC_URL", raising=False)
         patch_config("https://from-config.example")
         redirect_uri = self._redirect_uri(gated_app_direct)
         assert redirect_uri == "https://from-config.example/auth/callback"
@@ -290,7 +290,7 @@ class TestPublicUrlOverride:
         """Precedence pin — env wins over config.yaml. Fly.io / CI
         secret injection depends on this ordering."""
         monkeypatch.setenv(
-            "HERMES_DASHBOARD_PUBLIC_URL", "https://from-env.example",
+            "KINQHI_DASHBOARD_PUBLIC_URL", "https://from-env.example",
         )
         patch_config("https://from-config.example")
         redirect_uri = self._redirect_uri(gated_app_direct)
@@ -308,7 +308,7 @@ class TestPublicUrlOverride:
         whole authority; we trust them."""
         patch_config(None)
         monkeypatch.setenv(
-            "HERMES_DASHBOARD_PUBLIC_URL", "https://example.com/hermes",
+            "KINQHI_DASHBOARD_PUBLIC_URL", "https://example.com/hermes",
         )
         redirect_uri = self._redirect_uri(gated_app_direct)
         assert redirect_uri == "https://example.com/hermes/auth/callback"
@@ -322,7 +322,7 @@ class TestPublicUrlOverride:
         the operator already baked their prefix into public_url."""
         patch_config(None)
         monkeypatch.setenv(
-            "HERMES_DASHBOARD_PUBLIC_URL", "https://example.com/already-prefixed",
+            "KINQHI_DASHBOARD_PUBLIC_URL", "https://example.com/already-prefixed",
         )
         redirect_uri = self._redirect_uri(
             gated_app_proxied,
@@ -342,7 +342,7 @@ class TestPublicUrlOverride:
         produce identical results — no ``//auth/callback`` double slash."""
         patch_config(None)
         monkeypatch.setenv(
-            "HERMES_DASHBOARD_PUBLIC_URL", "https://example.com/",
+            "KINQHI_DASHBOARD_PUBLIC_URL", "https://example.com/",
         )
         redirect_uri = self._redirect_uri(gated_app_direct)
         assert redirect_uri == "https://example.com/auth/callback"
@@ -365,7 +365,7 @@ class TestPublicUrlOverride:
             'https://example.com/"injected',       # quote char
             "https://example.com/\nhttps://evil",  # CRLF injection
         ]:
-            monkeypatch.setenv("HERMES_DASHBOARD_PUBLIC_URL", bad)
+            monkeypatch.setenv("KINQHI_DASHBOARD_PUBLIC_URL", bad)
             redirect_uri = self._redirect_uri(gated_app_direct)
             # Fell through to request reconstruction — netloc is the
             # bound host, NOT the hostile value.
@@ -382,7 +382,7 @@ class TestPublicUrlOverride:
         """Same defensive behaviour as the other env vars in this
         plugin — an empty env var doesn't shadow a valid config.yaml
         entry."""
-        monkeypatch.setenv("HERMES_DASHBOARD_PUBLIC_URL", "")
+        monkeypatch.setenv("KINQHI_DASHBOARD_PUBLIC_URL", "")
         patch_config("https://from-config.example")
         redirect_uri = self._redirect_uri(gated_app_direct)
         assert redirect_uri == "https://from-config.example/auth/callback"
@@ -391,18 +391,18 @@ class TestPublicUrlOverride:
         self, patch_config, monkeypatch, caplog
     ):
         """A non-empty env var that's missing its scheme (the #1 cause
-        of "I set HERMES_DASHBOARD_PUBLIC_URL but the callback is still
+        of "I set KINQHI_DASHBOARD_PUBLIC_URL but the callback is still
         http://") must emit an operator-facing WARNING rather than being
         silently discarded. Regression for #42780."""
         import logging
 
-        from hermes_cli.dashboard_auth import prefix as prefix_mod
+        from kinqhi_cli.dashboard_auth import prefix as prefix_mod
 
         # Reset the per-value dedup cache so the warning fires in-test
         # regardless of test ordering.
         prefix_mod._warned_malformed_public_urls.clear()
         patch_config(None)
-        monkeypatch.setenv("HERMES_DASHBOARD_PUBLIC_URL", "hermes.domain.com")
+        monkeypatch.setenv("KINQHI_DASHBOARD_PUBLIC_URL", "hermes.domain.com")
 
         with caplog.at_level(logging.WARNING, logger=prefix_mod.__name__):
             result = prefix_mod.resolve_public_url()
@@ -414,7 +414,7 @@ class TestPublicUrlOverride:
             if r.levelno == logging.WARNING
         ]
         assert any(
-            "HERMES_DASHBOARD_PUBLIC_URL" in m
+            "KINQHI_DASHBOARD_PUBLIC_URL" in m
             and "hermes.domain.com" in m
             and "scheme" in m
             for m in warnings
@@ -428,11 +428,11 @@ class TestPublicUrlOverride:
         misconfigured deploy doesn't flood the logs."""
         import logging
 
-        from hermes_cli.dashboard_auth import prefix as prefix_mod
+        from kinqhi_cli.dashboard_auth import prefix as prefix_mod
 
         prefix_mod._warned_malformed_public_urls.clear()
         patch_config(None)
-        monkeypatch.setenv("HERMES_DASHBOARD_PUBLIC_URL", "hermes.domain.com")
+        monkeypatch.setenv("KINQHI_DASHBOARD_PUBLIC_URL", "hermes.domain.com")
 
         with caplog.at_level(logging.WARNING, logger=prefix_mod.__name__):
             for _ in range(5):
@@ -455,12 +455,12 @@ class TestPublicUrlOverride:
         """A correctly-formed value must not produce a spurious warning."""
         import logging
 
-        from hermes_cli.dashboard_auth import prefix as prefix_mod
+        from kinqhi_cli.dashboard_auth import prefix as prefix_mod
 
         prefix_mod._warned_malformed_public_urls.clear()
         patch_config(None)
         monkeypatch.setenv(
-            "HERMES_DASHBOARD_PUBLIC_URL", "https://hermes.domain.com"
+            "KINQHI_DASHBOARD_PUBLIC_URL", "https://hermes.domain.com"
         )
 
         with caplog.at_level(logging.WARNING, logger=prefix_mod.__name__):
@@ -560,7 +560,7 @@ class TestCookiePathRespectsPrefix:
         spec-compatible without Secure."""
         from fastapi import FastAPI
         from fastapi.responses import Response
-        from hermes_cli.dashboard_auth.cookies import set_pkce_cookie
+        from kinqhi_cli.dashboard_auth.cookies import set_pkce_cookie
 
         app = FastAPI()
 

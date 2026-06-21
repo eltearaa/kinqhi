@@ -17,13 +17,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-from hermes_constants import (
-    get_hermes_home,
-    get_hermes_home_override,
-    reset_hermes_home_override,
-    set_hermes_home_override,
+from kinqhi_constants import (
+    get_kinqhi_home,
+    get_kinqhi_home_override,
+    reset_kinqhi_home_override,
+    set_kinqhi_home_override,
 )
-from hermes_cli.env_loader import load_hermes_dotenv
+from kinqhi_cli.env_loader import load_hermes_dotenv
 from utils import is_truthy_value
 from tui_gateway.transport import (
     StdioTransport,
@@ -35,9 +35,9 @@ from tui_gateway.transport import (
 
 logger = logging.getLogger(__name__)
 
-_hermes_home = get_hermes_home()
+_kinqhi_home = get_kinqhi_home()
 load_hermes_dotenv(
-    hermes_home=_hermes_home, project_env=Path(__file__).parent.parent / ".env"
+    kinqhi_home=_kinqhi_home, project_env=Path(__file__).parent.parent / ".env"
 )
 
 
@@ -46,11 +46,11 @@ load_hermes_dotenv(
 # JSON-RPC pipe (TUI side parses it, doesn't log raw), the root logger
 # only catches handled warnings, and the subprocess exits before stderr
 # flushes through the stderr->gateway.stderr event pump. This hook
-# appends every unhandled exception to ~/.hermes/logs/tui_gateway_crash.log
+# appends every unhandled exception to ~/.kinqhi/logs/tui_gateway_crash.log
 # AND re-emits a one-line summary to stderr so the TUI can surface it in
 # Activity — exactly what was missing when the voice-mode turns started
 # exiting the gateway mid-TTS.
-_CRASH_LOG = os.path.join(_hermes_home, "logs", "tui_gateway_crash.log")
+_CRASH_LOG = os.path.join(_kinqhi_home, "logs", "tui_gateway_crash.log")
 
 
 def _panic_hook(exc_type, exc_value, exc_tb):
@@ -114,7 +114,7 @@ def _thread_panic_hook(args):
 threading.excepthook = _thread_panic_hook
 
 try:
-    from hermes_cli.banner import prefetch_update_check
+    from kinqhi_cli.banner import prefetch_update_check
 
     prefetch_update_check()
 except Exception:
@@ -138,7 +138,7 @@ _cfg_mtime: float | None = None
 _cfg_path = None
 _session_resume_lock = threading.Lock()
 try:
-    _slash_timeout = float(os.environ.get("HERMES_TUI_SLASH_TIMEOUT_S") or "45")
+    _slash_timeout = float(os.environ.get("KINQHI_TUI_SLASH_TIMEOUT_S") or "45")
 except (ValueError, TypeError):
     _slash_timeout = 45.0
 _SLASH_WORKER_TIMEOUT_S = max(5.0, _slash_timeout)
@@ -155,7 +155,7 @@ _SLASH_WORKER_TIMEOUT_S = max(5.0, _slash_timeout)
 # Set to 0 to disable (park forever, pre-fix behaviour).
 try:
     _ws_orphan_reap_grace = float(
-        os.environ.get("HERMES_TUI_WS_ORPHAN_REAP_GRACE_S") or "20"
+        os.environ.get("KINQHI_TUI_WS_ORPHAN_REAP_GRACE_S") or "20"
     )
 except (ValueError, TypeError):
     _ws_orphan_reap_grace = 20.0
@@ -189,7 +189,7 @@ _LONG_HANDLERS = frozenset(
 
 try:
     _rpc_pool_workers = max(
-        2, int(os.environ.get("HERMES_TUI_RPC_POOL_WORKERS") or "4")
+        2, int(os.environ.get("KINQHI_TUI_RPC_POOL_WORKERS") or "4")
     )
 except (ValueError, TypeError):
     _rpc_pool_workers = 4
@@ -228,7 +228,7 @@ _detached_ws_transport = _DropTransport()
 
 
 class _SlashWorker:
-    """Persistent HermesCLI subprocess for slash commands."""
+    """Persistent KinqhiCLI subprocess for slash commands."""
 
     def __init__(self, session_key: str, model: str):
         self._lock = threading.Lock()
@@ -341,7 +341,7 @@ def _load_busy_input_mode() -> str:
 def _notify_session_boundary(event_type: str, session_id: str | None) -> None:
     """Fire session lifecycle hooks with CLI parity."""
     try:
-        from hermes_cli.plugins import invoke_hook as _invoke_hook
+        from kinqhi_cli.plugins import invoke_hook as _invoke_hook
 
         _invoke_hook(event_type, session_id=session_id, platform="tui")
     except Exception:
@@ -355,7 +355,7 @@ def _claim_active_session_slot(
     surface: str = "tui",
 ) -> tuple[Any, str | None]:
     try:
-        from hermes_cli.active_sessions import try_acquire_active_session
+        from kinqhi_cli.active_sessions import try_acquire_active_session
 
         return try_acquire_active_session(
             session_id=session_key,
@@ -564,7 +564,7 @@ def _close_sessions_for_transport(
         else:
             # Point detached sessions at the drop sentinel (NOT real stdio) so
             # _ws_session_is_orphaned recognizes them and the grace-reap can
-            # actually fire; a standalone `hermes --tui` keeps real _stdio.
+            # actually fire; a standalone `kinqhi --tui` keeps real _stdio.
             session["transport"] = _detached_ws_transport
             detached += 1
             try:
@@ -585,7 +585,7 @@ def _shutdown_sessions() -> None:
 # hours-scale because last_active freezes during a long turn and on passive
 # viewing — running/pending/starting/live-transport are hard exemptions instead.
 try:
-    _SESSION_TTL_S = float(os.environ.get("HERMES_TUI_SESSION_TTL_S") or 6 * 3600)
+    _SESSION_TTL_S = float(os.environ.get("KINQHI_TUI_SESSION_TTL_S") or 6 * 3600)
 except (TypeError, ValueError):
     _SESSION_TTL_S = float(6 * 3600)
 _SESSION_TTL_S = max(0.0, _SESSION_TTL_S)
@@ -595,7 +595,7 @@ _REAPER_SCAN_S = 300.0
 def _transport_is_dead(transport) -> bool:
     # _detached_ws_transport is the post-WS-disconnect drop sentinel; a session
     # parked on it has no live client. _stdio_transport is the REAL transport
-    # for a standalone `hermes --tui`, so it must NOT count as dead here (doing
+    # for a standalone `kinqhi --tui`, so it must NOT count as dead here (doing
     # so let the idle reaper evict healthy standalone TUI sessions).
     if transport is _detached_ws_transport:
         return True
@@ -647,7 +647,7 @@ _start_idle_reaper()
 def _get_db():
     global _db, _db_error
     if _db is None:
-        from hermes_state import SessionDB
+        from kinqhi_state import SessionDB
 
         try:
             _db = SessionDB()
@@ -671,7 +671,7 @@ def _db_unavailable_error(rid, *, code: int):
 # One dashboard normally serves its launch profile. But the desktop's app-global
 # remote mode points every profile at this single backend, so resume/prompt must
 # be able to act on ANOTHER local profile's state.db + home. The desktop passes
-# ``profile`` on those calls; we open that profile's db and bind its HERMES_HOME
+# ``profile`` on those calls; we open that profile's db and bind its KINQHI_HOME
 # (a ContextVar override) for the duration of the call so config/skills/model and
 # message persistence all resolve to the right profile. Omitted/own profile → the
 # launch profile (unchanged for single-profile and per-profile-remote setups).
@@ -681,13 +681,13 @@ def _profile_home(profile: str | None) -> Path | None:
     if not name:
         return None
     try:
-        from hermes_cli import profiles as profiles_mod
+        from kinqhi_cli import profiles as profiles_mod
 
         home = Path(profiles_mod.get_profile_dir(name))
     except Exception:
         return None
     # Already the launch profile? No override needed.
-    if home.resolve() == Path(_hermes_home).resolve():
+    if home.resolve() == Path(_kinqhi_home).resolve():
         return None
     return home if (home / "state.db").exists() or home.exists() else None
 
@@ -895,7 +895,7 @@ def _wait_agent(session: dict, rid: str, timeout: float = 30.0) -> dict | None:
 def _start_agent_build(sid: str, session: dict) -> None:
     """Start building the real AIAgent for a TUI session, once.
 
-    Classic `hermes` shows the prompt before constructing AIAgent; the TUI used
+    Classic `kinqhi` shows the prompt before constructing AIAgent; the TUI used
     to eagerly build it during session.create, making startup feel blocked on
     tool discovery/model metadata even though the composer was visible.  Keep
     the shell responsive by deferring this work until the first prompt (or any
@@ -937,13 +937,13 @@ def _start_agent_build(sid: str, session: dict) -> None:
         try:
             tokens = _set_session_context(key)
             # Build against the session's profile (global-remote): bind its
-            # HERMES_HOME so config/skills/model resolve to it, and hand the
+            # KINQHI_HOME so config/skills/model resolve to it, and hand the
             # agent that profile's db so turns persist to the right state.db.
             session_db = None
             if profile_home:
-                home_token = set_hermes_home_override(profile_home)
+                home_token = set_kinqhi_home_override(profile_home)
                 try:
-                    from hermes_state import SessionDB
+                    from kinqhi_state import SessionDB
 
                     session_db = SessionDB(db_path=Path(profile_home) / "state.db")
                 except Exception:
@@ -1026,7 +1026,7 @@ def _start_agent_build(sid: str, session: dict) -> None:
             _emit("error", sid, {"message": f"agent init failed: {e}"})
         finally:
             if home_token is not None:
-                reset_hermes_home_override(home_token)
+                reset_kinqhi_home_override(home_token)
             # _attach_worker already closed the worker if this session was
             # reaped mid-build; only the late notify registration can still
             # leak (session.close unregistered before _build registered it).
@@ -1192,7 +1192,7 @@ def _ensure_session_db_row(session: dict) -> None:
     # unified list mis-tags it, and resume 404s ("session not found").
     profile_home = session.get("profile_home")
     if profile_home:
-        from hermes_state import SessionDB
+        from kinqhi_state import SessionDB
 
         try:
             db = SessionDB(db_path=Path(profile_home) / "state.db")
@@ -1237,7 +1237,7 @@ def _ensure_session_db_row(session: dict) -> None:
     # start (matches _runtime_model_config's normalization).
     if str(model_config.get("provider") or "").strip().lower() == "custom":
         try:
-            from hermes_cli.runtime_provider import canonical_custom_identity
+            from kinqhi_cli.runtime_provider import canonical_custom_identity
 
             healed = canonical_custom_identity(
                 base_url=model_config.get("base_url") or None
@@ -1282,7 +1282,7 @@ def _session_db(session: dict):
     db, close_db = None, False
     profile_home = session.get("profile_home")
     if profile_home:
-        from hermes_state import SessionDB
+        from kinqhi_state import SessionDB
 
         try:
             db, close_db = SessionDB(db_path=Path(profile_home) / "state.db"), True
@@ -1339,10 +1339,10 @@ def _load_cfg() -> dict:
 
         # Honor a per-session profile override (see session.resume) so a resumed
         # remote profile loads ITS config (model, skills, prompt); otherwise the
-        # launch profile's _hermes_home. Cache is keyed on the resolved path, so
+        # launch profile's _kinqhi_home. Cache is keyed on the resolved path, so
         # profiles don't clobber each other.
-        override = get_hermes_home_override()
-        home = override if isinstance(override, str) and override else _hermes_home
+        override = get_kinqhi_home_override()
+        home = override if isinstance(override, str) and override else _kinqhi_home
         p = Path(home) / "config.yaml"
         mtime = p.stat().st_mtime if p.exists() else None
         with _cfg_lock:
@@ -1371,12 +1371,12 @@ def _apply_managed(cfg: dict) -> dict:
     """Overlay administrator-pinned managed-scope values on a config dict.
 
     The TUI/desktop backend builds config independently of
-    hermes_cli.config.load_config, so without this a managed skin / reasoning_effort
+    kinqhi_cli.config.load_config, so without this a managed skin / reasoning_effort
     / service_tier / provider_routing would be silently ignored here. Read-side
     only — the raw user config is what gets cached and saved. Fail-open.
     """
     try:
-        from hermes_cli import managed_scope
+        from kinqhi_cli import managed_scope
 
         return managed_scope.apply_managed_overlay(cfg if isinstance(cfg, dict) else {})
     except Exception:
@@ -1387,7 +1387,7 @@ def _save_cfg(cfg: dict):
     global _cfg_cache, _cfg_mtime, _cfg_path
     import yaml
 
-    path = _hermes_home / "config.yaml"
+    path = _kinqhi_home / "config.yaml"
     with open(path, "w", encoding="utf-8") as f:
         yaml.safe_dump(cfg, f)
     with _cfg_lock:
@@ -1448,9 +1448,9 @@ def _clear_session_context(tokens: list) -> None:
 
 def _enable_gateway_prompts() -> None:
     """Route approvals through gateway callbacks instead of CLI input()."""
-    os.environ["HERMES_GATEWAY_SESSION"] = "1"
-    os.environ["HERMES_EXEC_ASK"] = "1"
-    os.environ["HERMES_INTERACTIVE"] = "1"
+    os.environ["KINQHI_GATEWAY_SESSION"] = "1"
+    os.environ["KINQHI_EXEC_ASK"] = "1"
+    os.environ["KINQHI_INTERACTIVE"] = "1"
 
 
 # ── Blocking prompt factory ──────────────────────────────────────────
@@ -1495,7 +1495,7 @@ def _clear_pending(sid: str | None = None) -> None:
 
 def resolve_skin() -> dict:
     try:
-        from hermes_cli.skin_engine import init_skin_from_config, get_active_skin
+        from kinqhi_cli.skin_engine import init_skin_from_config, get_active_skin
 
         init_skin_from_config(_load_cfg())
         skin = get_active_skin()
@@ -1514,8 +1514,8 @@ def resolve_skin() -> dict:
 
 def _resolve_model() -> str:
     env = (
-        os.environ.get("HERMES_MODEL", "")
-        or os.environ.get("HERMES_INFERENCE_MODEL", "")
+        os.environ.get("KINQHI_MODEL", "")
+        or os.environ.get("KINQHI_INFERENCE_MODEL", "")
     ).strip()
     if env:
         return env
@@ -1530,9 +1530,9 @@ def _resolve_model() -> str:
 def _config_model_target() -> tuple[str, str]:
     """(model, provider) currently selected by config (env as fallback).
 
-    config.yaml wins over HERMES_MODEL / HERMES_INFERENCE_MODEL here, the
+    config.yaml wins over KINQHI_MODEL / KINQHI_INFERENCE_MODEL here, the
     reverse of `_resolve_model()`'s startup order. Those env vars are a
-    provision-time seed (hosted instances set HERMES_INFERENCE_MODEL in the
+    provision-time seed (hosted instances set KINQHI_INFERENCE_MODEL in the
     container env); if they outranked config.yaml, the per-turn sync would
     stay pinned to the seed forever and dashboard/CLI model changes would
     never reach an open chat — the exact bug this sync exists to fix.
@@ -1554,19 +1554,19 @@ def _config_model_target() -> tuple[str, str]:
 
 def _resolve_startup_runtime() -> tuple[str, str | None]:
     model = _resolve_model()
-    explicit_provider = os.environ.get("HERMES_TUI_PROVIDER", "").strip()
+    explicit_provider = os.environ.get("KINQHI_TUI_PROVIDER", "").strip()
     if explicit_provider:
         return model, explicit_provider
 
     explicit_model = (
-        os.environ.get("HERMES_MODEL", "")
-        or os.environ.get("HERMES_INFERENCE_MODEL", "")
+        os.environ.get("KINQHI_MODEL", "")
+        or os.environ.get("KINQHI_INFERENCE_MODEL", "")
     ).strip()
     if not explicit_model:
         return model, None
 
     try:
-        from hermes_cli.models import detect_static_provider_for_model
+        from kinqhi_cli.models import detect_static_provider_for_model
 
         cfg = _load_cfg().get("model") or {}
         current_provider = (
@@ -1575,7 +1575,7 @@ def _resolve_startup_runtime() -> tuple[str, str | None]:
                 if isinstance(cfg, dict)
                 else ""
             )
-            or os.environ.get("HERMES_INFERENCE_PROVIDER", "").strip().lower()
+            or os.environ.get("KINQHI_INFERENCE_PROVIDER", "").strip().lower()
             or "auto"
         )
         detected = detect_static_provider_for_model(explicit_model, current_provider)
@@ -1648,7 +1648,7 @@ def _stored_session_runtime_overrides(row: dict | None) -> dict:
     if provider.strip().lower() == "custom":
         healed = None
         try:
-            from hermes_cli.runtime_provider import canonical_custom_identity
+            from kinqhi_cli.runtime_provider import canonical_custom_identity
 
             healed = canonical_custom_identity(base_url=base_url or None)
         except Exception:
@@ -1705,7 +1705,7 @@ def _runtime_model_config(agent, existing: dict | None = None) -> dict:
             # bare "custom" with no base_url was persisted verbatim and routed
             # to OpenRouter with no key on the next resume).
             try:
-                from hermes_cli.runtime_provider import (
+                from kinqhi_cli.runtime_provider import (
                     canonical_custom_identity,
                 )
 
@@ -1903,7 +1903,7 @@ def _display_mouse_tracking(display: dict) -> str:
 
 
 def _load_reasoning_config() -> dict | None:
-    from hermes_constants import parse_reasoning_effort
+    from kinqhi_constants import parse_reasoning_effort
 
     effort = str(
         (_load_cfg().get("agent") or {}).get("reasoning_effort", "") or ""
@@ -1959,7 +1959,7 @@ def _load_memory_notifications() -> str:
 
 
 def _load_tool_progress_mode() -> str:
-    env = os.environ.get("HERMES_TUI_TOOL_PROGRESS", "").strip().lower()
+    env = os.environ.get("KINQHI_TUI_TOOL_PROGRESS", "").strip().lower()
     if env in {"off", "new", "all", "verbose"}:
         return env
     raw = (_load_cfg().get("display") or {}).get("tool_progress", "all")
@@ -1974,15 +1974,15 @@ def _load_tool_progress_mode() -> str:
 def _load_enabled_toolsets() -> list[str] | None:
     explicit = [
         item.strip()
-        for item in os.environ.get("HERMES_TUI_TOOLSETS", "").split(",")
+        for item in os.environ.get("KINQHI_TUI_TOOLSETS", "").split(",")
         if item.strip()
     ]
     cfg = None
     fallback_notice = None
 
-    # Coding posture (base Hermes): with no explicit pin, collapse to the
+    # Coding posture (base Kinqhi): with no explicit pin, collapse to the
     # coding toolset (+ enabled MCP servers) when sitting in a code workspace.
-    # The desktop app and `hermes --tui` both land here. See
+    # The desktop app and `kinqhi --tui` both land here. See
     # agent/coding_context.py. No config is loaded yet at this point, so we let
     # coding_selection() load it lazily (cli.py passes its already-resolved
     # CLI_CONFIG instead, purely to avoid a redundant read).
@@ -2007,7 +2007,7 @@ def _load_enabled_toolsets() -> list[str] | None:
 
         if unresolved:
             try:
-                from hermes_cli.plugins import discover_plugins
+                from kinqhi_cli.plugins import discover_plugins
 
                 discover_plugins()
                 plugin_valid = [name for name in unresolved if validate_toolset(name)]
@@ -2022,7 +2022,7 @@ def _load_enabled_toolsets() -> list[str] | None:
             ignored = [name for name in explicit if name not in {"all", "*"}]
             if ignored:
                 print(
-                    "[tui] HERMES_TUI_TOOLSETS=all enables every toolset; "
+                    "[tui] KINQHI_TUI_TOOLSETS=all enables every toolset; "
                     f"ignoring additional entries: {', '.join(ignored)}",
                     file=sys.stderr,
                     flush=True,
@@ -2035,8 +2035,8 @@ def _load_enabled_toolsets() -> list[str] | None:
         mcp_names: set[str] = set()
         mcp_disabled: set[str] = set()
         try:
-            from hermes_cli.config import read_raw_config
-            from hermes_cli.tools_config import _parse_enabled_flag
+            from kinqhi_cli.config import read_raw_config
+            from kinqhi_cli.tools_config import _parse_enabled_flag
 
             raw_cfg = read_raw_config()
             mcp_servers = (
@@ -2066,13 +2066,13 @@ def _load_enabled_toolsets() -> list[str] | None:
 
         if unknown:
             print(
-                f"[tui] ignoring unknown HERMES_TUI_TOOLSETS entries: {', '.join(unknown)}",
+                f"[tui] ignoring unknown KINQHI_TUI_TOOLSETS entries: {', '.join(unknown)}",
                 file=sys.stderr,
                 flush=True,
             )
         if disabled:
             print(
-                "[tui] ignoring disabled MCP servers in HERMES_TUI_TOOLSETS "
+                "[tui] ignoring disabled MCP servers in KINQHI_TUI_TOOLSETS "
                 "(set enabled: true in config.yaml to use): "
                 f"{', '.join(disabled)}",
                 file=sys.stderr,
@@ -2083,12 +2083,12 @@ def _load_enabled_toolsets() -> list[str] | None:
             return valid
 
         fallback_notice = (
-            "[tui] no valid HERMES_TUI_TOOLSETS entries; using configured CLI toolsets"
+            "[tui] no valid KINQHI_TUI_TOOLSETS entries; using configured CLI toolsets"
         )
 
     try:
-        from hermes_cli.config import load_config
-        from hermes_cli.tools_config import _get_platform_tools
+        from kinqhi_cli.config import load_config
+        from kinqhi_cli.tools_config import _get_platform_tools
 
         cfg = cfg if cfg is not None else load_config()
 
@@ -2107,7 +2107,7 @@ def _load_enabled_toolsets() -> list[str] | None:
     except Exception:
         if fallback_notice is not None:
             print(
-                "[tui] no valid HERMES_TUI_TOOLSETS entries and configured CLI toolsets could not be loaded; enabling all toolsets",
+                "[tui] no valid KINQHI_TUI_TOOLSETS entries and configured CLI toolsets could not be loaded; enabling all toolsets",
                 file=sys.stderr,
                 flush=True,
             )
@@ -2149,7 +2149,7 @@ def _restart_slash_worker(sid: str, session: dict):
 
 
 def _persist_model_switch(result) -> None:
-    from hermes_cli.config import save_config
+    from kinqhi_cli.config import save_config
 
     cfg = _load_cfg()
     model_cfg = cfg.get("model")
@@ -2175,12 +2175,12 @@ def _apply_model_switch(
     pin_session_override: bool = True,
     parsed_flags: tuple[str, str, bool, bool, bool] | None = None,
 ) -> dict:
-    from hermes_cli.model_switch import (
+    from kinqhi_cli.model_switch import (
         parse_model_flags,
         resolve_persist_behavior,
         switch_model,
     )
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from kinqhi_cli.runtime_provider import resolve_runtime_provider
 
     if parsed_flags is None:
         parsed_flags = parse_model_flags(raw_input)
@@ -2226,7 +2226,7 @@ def _apply_model_switch(
     user_provs = None
     custom_provs = None
     try:
-        from hermes_cli.config import get_compatible_custom_providers, load_config
+        from kinqhi_cli.config import get_compatible_custom_providers, load_config
 
         cfg = load_config()
         user_provs = cfg.get("providers")
@@ -2250,7 +2250,7 @@ def _apply_model_switch(
 
     if agent:
         try:
-            from hermes_cli.context_switch_guard import merge_preflight_compression_warning
+            from kinqhi_cli.context_switch_guard import merge_preflight_compression_warning
 
             _cfg_ctx = None
             if isinstance(cfg, dict):
@@ -2269,7 +2269,7 @@ def _apply_model_switch(
 
     if not confirm_expensive_model:
         try:
-            from hermes_cli.model_cost_guard import expensive_model_warning
+            from kinqhi_cli.model_cost_guard import expensive_model_warning
 
             warning = expensive_model_warning(
                 result.new_model,
@@ -2311,8 +2311,8 @@ def _apply_model_switch(
     # session (e.g. /new via _reset_session_agent, or resume) re-derives the
     # user's chosen model/provider instead of falling back to global config.
     #
-    # We deliberately do NOT write process-global env vars (HERMES_MODEL /
-    # HERMES_INFERENCE_MODEL / HERMES_TUI_PROVIDER / HERMES_INFERENCE_PROVIDER)
+    # We deliberately do NOT write process-global env vars (KINQHI_MODEL /
+    # KINQHI_INFERENCE_MODEL / KINQHI_TUI_PROVIDER / KINQHI_INFERENCE_PROVIDER)
     # here. The desktop backend hosts every same-profile session in ONE process,
     # so mutating os.environ on a /model switch leaked the new model/provider
     # into every OTHER live session's next agent rebuild — switching the model
@@ -2550,8 +2550,8 @@ def _get_usage(agent) -> dict:
     except Exception:
         pass
     # Dev-only live credits-spent readout (L0 usage-aware-credits). Gated on
-    # HERMES_DEV_CREDITS so the payload stays clean when the flag is off.
-    if is_truthy_value(os.environ.get("HERMES_DEV_CREDITS")):
+    # KINQHI_DEV_CREDITS so the payload stays clean when the flag is off.
+    if is_truthy_value(os.environ.get("KINQHI_DEV_CREDITS")):
         try:
             spent = agent.get_credits_spent_micros()
             if spent is not None:
@@ -2608,7 +2608,7 @@ def _probe_config_health(cfg: dict) -> str:
 
 def _current_profile_name() -> str:
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from kinqhi_cli.profiles import get_active_profile_name
 
         return get_active_profile_name() or "default"
     except Exception:
@@ -2681,7 +2681,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
         "profile_name": _current_profile_name(),
     }
     try:
-        from hermes_cli import __version__, __release_date__
+        from kinqhi_cli import __version__, __release_date__
 
         info["version"] = __version__
         info["release_date"] = __release_date__
@@ -2698,7 +2698,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
     except Exception:
         pass
     try:
-        from hermes_cli.banner import get_available_skills
+        from kinqhi_cli.banner import get_available_skills
 
         info["skills"] = get_available_skills()
     except Exception:
@@ -2714,8 +2714,8 @@ def _session_info(agent, session: dict | None = None) -> dict:
     except Exception:
         pass
     try:
-        from hermes_cli.banner import get_update_result
-        from hermes_cli.config import recommended_update_command
+        from kinqhi_cli.banner import get_update_result
+        from kinqhi_cli.config import recommended_update_command
 
         info["update_behind"] = get_update_result(timeout=0.5)
         info["update_command"] = recommended_update_command()
@@ -3185,7 +3185,7 @@ def _wire_callbacks(sid: str):
                 "skipped": True,
                 "message": "skipped",
             }
-        from hermes_cli.config import save_env_value_secure
+        from kinqhi_cli.config import save_env_value_secure
 
         return {
             **save_env_value_secure(env_var, val),
@@ -3214,7 +3214,7 @@ def _available_personalities(cfg: dict | None = None) -> dict:
         return (load_cli_config().get("agent") or {}).get("personalities", {}) or {}
     except Exception:
         try:
-            from hermes_cli.config import load_config as _load_full_cfg
+            from kinqhi_cli.config import load_config as _load_full_cfg
 
             return (_load_full_cfg().get("agent") or {}).get("personalities", {}) or {}
         except Exception:
@@ -3301,7 +3301,7 @@ def _apply_personality_to_session(
 
 def _cfg_max_turns(cfg: dict, default: int) -> int:
     try:
-        env_max = int(os.environ.get("HERMES_TUI_MAX_TURNS", "") or 0)
+        env_max = int(os.environ.get("KINQHI_TUI_MAX_TURNS", "") or 0)
         if env_max > 0:
             return env_max
     except (TypeError, ValueError):
@@ -3311,7 +3311,7 @@ def _cfg_max_turns(cfg: dict, default: int) -> int:
 
 
 def _parse_tui_skills_env() -> list[str]:
-    raw = os.environ.get("HERMES_TUI_SKILLS", "")
+    raw = os.environ.get("KINQHI_TUI_SKILLS", "")
     skills: list[str] = []
     seen: set[str] = set()
     for part in raw.replace("\n", ",").split(","):
@@ -3326,12 +3326,12 @@ def _load_fallback_model():
     """Return the configured fallback chain for TUI-created agents.
 
     Delegates to the shared ``get_fallback_chain`` helper so the TUI path
-    stays in parity with ``HermesCLI.__init__`` and ``gateway/run.py``:
+    stays in parity with ``KinqhiCLI.__init__`` and ``gateway/run.py``:
     ``fallback_providers`` is the primary source of truth and keeps its
     order, with legacy ``fallback_model`` entries merged in afterwards
     (deduped on provider/model/base_url).
     """
-    from hermes_cli.fallback_config import get_fallback_chain
+    from kinqhi_cli.fallback_config import get_fallback_chain
 
     return get_fallback_chain(_load_cfg())
 
@@ -3629,16 +3629,16 @@ def _make_agent(
     service_tier_override: str | None = None,
 ):
     from run_agent import AIAgent
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from kinqhi_cli.runtime_provider import resolve_runtime_provider
 
     # MCP tool discovery runs in a background daemon thread at startup so a
     # dead server can't freeze the shell.  The agent snapshots its tool list
     # once here and never re-reads it, so briefly wait for in-flight discovery
     # to land before building — bounded, so a slow/dead server still can't
-    # block. Dashboard /api/ws uses hermes_cli.mcp_startup; TUI stdio keeps
+    # block. Dashboard /api/ws uses kinqhi_cli.mcp_startup; TUI stdio keeps
     # its existing tui_gateway.entry-owned thread.
     try:
-        from hermes_cli.mcp_startup import wait_for_mcp_discovery
+        from kinqhi_cli.mcp_startup import wait_for_mcp_discovery
 
         wait_for_mcp_discovery()
     except Exception:
@@ -3689,7 +3689,7 @@ def _make_agent(
             # the entry identity from the persisted base_url, falling back to
             # the configured provider when the override carries no base_url
             # (the recurring Desktop/TUI regression vector).
-            from hermes_cli.runtime_provider import canonical_custom_identity
+            from kinqhi_cli.runtime_provider import canonical_custom_identity
 
             recovered = canonical_custom_identity(base_url=override_base_url or None)
             if recovered:
@@ -3763,10 +3763,10 @@ def _make_agent(
         session_id=session_id or key,
         session_db=session_db if session_db is not None else _get_db(),
         ephemeral_system_prompt=system_prompt or None,
-        checkpoints_enabled=is_truthy_value(os.environ.get("HERMES_TUI_CHECKPOINTS")),
-        pass_session_id=is_truthy_value(os.environ.get("HERMES_TUI_PASS_SESSION_ID")),
-        skip_context_files=is_truthy_value(os.environ.get("HERMES_IGNORE_RULES")),
-        skip_memory=is_truthy_value(os.environ.get("HERMES_IGNORE_RULES")),
+        checkpoints_enabled=is_truthy_value(os.environ.get("KINQHI_TUI_CHECKPOINTS")),
+        pass_session_id=is_truthy_value(os.environ.get("KINQHI_TUI_PASS_SESSION_ID")),
+        skip_context_files=is_truthy_value(os.environ.get("KINQHI_IGNORE_RULES")),
+        skip_memory=is_truthy_value(os.environ.get("KINQHI_IGNORE_RULES")),
         fallback_model=_load_fallback_model(),
         **_agent_cbs(sid),
     )
@@ -4226,7 +4226,7 @@ def _(rid, params: dict) -> dict:
     # ``profile`` (app-global remote mode): a new chat started under a non-launch
     # profile must build its agent + persist against THAT profile's home/state.db,
     # not the dashboard's launch profile. Stored on the session so _start_agent_build
-    # and each turn re-bind HERMES_HOME. None/own profile → launch (unchanged).
+    # and each turn re-bind KINQHI_HOME. None/own profile → launch (unchanged).
     profile = (params.get("profile") or "").strip() or None
     profile_home = _profile_home(profile)
 
@@ -4244,7 +4244,7 @@ def _(rid, params: dict) -> dict:
     create_reasoning_override = None
     if effort := str(params.get("reasoning_effort") or "").strip():
         try:
-            from hermes_constants import parse_reasoning_effort
+            from kinqhi_constants import parse_reasoning_effort
 
             create_reasoning_override = parse_reasoning_effort(effort)
         except Exception:
@@ -4356,7 +4356,7 @@ def _(rid, params: dict) -> dict:
         # Resume picker should surface human conversation sessions from every
         # user-facing surface — CLI, TUI, all gateway platforms (including new
         # ones not enumerated here), ACP adapter clients, webhook sessions,
-        # custom `HERMES_SESSION_SOURCE` values, and older installs with
+        # custom `KINQHI_SESSION_SOURCE` values, and older installs with
         # different source labels. We deny-list only the noisy internal
         # sources (``tool`` sub-agent runs) rather than allow-listing a
         # fixed set of platform names that goes stale whenever a new
@@ -4454,7 +4454,7 @@ def _(rid, params: dict) -> dict:
     # In a profile scope, the agent OWNS a long-lived db handle bound to that
     # profile (do NOT auto-close it here). Otherwise reuse the shared launch db.
     if profile_home is not None:
-        from hermes_state import SessionDB
+        from kinqhi_state import SessionDB
 
         db = SessionDB(db_path=profile_home / "state.db")
     else:
@@ -4638,7 +4638,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 4090, limit_message)
     _enable_gateway_prompts()
     home_token = (
-        set_hermes_home_override(str(profile_home)) if profile_home is not None else None
+        set_kinqhi_home_override(str(profile_home)) if profile_home is not None else None
     )
     try:
         db.reopen_session(target)
@@ -4673,7 +4673,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 5000, f"resume failed: {e}")
     finally:
         if home_token is not None:
-            reset_hermes_home_override(home_token)
+            reset_kinqhi_home_override(home_token)
 
     # Double-checked locking: another concurrent resume may have created the
     # live session while we were building. Re-check under the lock; if it won,
@@ -4700,7 +4700,7 @@ def _(rid, params: dict) -> dict:
             return _ok(rid, payload)
         try:
             init_home_token = (
-                set_hermes_home_override(str(profile_home))
+                set_kinqhi_home_override(str(profile_home))
                 if profile_home is not None
                 else None
             )
@@ -4716,14 +4716,14 @@ def _(rid, params: dict) -> dict:
                 )
             finally:
                 if init_home_token is not None:
-                    reset_hermes_home_override(init_home_token)
+                    reset_kinqhi_home_override(init_home_token)
             if sid in _sessions:
                 if stored_runtime_overrides.get("model_override") is not None:
                     _sessions[sid]["model_override"] = stored_runtime_overrides[
                         "model_override"
                     ]
                 _sessions[sid]["display_history_prefix"] = display_history_prefix
-                # Remember the profile home so each turn re-binds HERMES_HOME (the
+                # Remember the profile home so each turn re-binds KINQHI_HOME (the
                 # agent persists to its own db, but mid-turn home reads — memory,
                 # skills — must resolve to the resumed profile too).
                 if profile_home is not None:
@@ -4923,7 +4923,7 @@ def _(rid, params: dict) -> dict:
     # filter on ``transport is _detached_ws_transport`` (the WS-detached drop
     # sentinel): a detached session is still attachable via a quick reconnect /
     # session.resume until the grace-reap finalizes it, and a standalone
-    # ``hermes --tui`` session legitimately rides the real stdio transport and
+    # ``kinqhi --tui`` session legitimately rides the real stdio transport and
     # must stay visible.
     # Keep the natural creation/insertion order from ``_sessions``.  The
     # frontend marks the focused session with ``current``; it should not jump to
@@ -4992,7 +4992,7 @@ def _(rid, params: dict) -> dict:
     active = {s.get("session_key") for s in snapshot if s.get("session_key")}
     if target in active:
         return _err(rid, 4023, "cannot delete an active session")
-    sessions_dir = get_hermes_home() / "sessions"
+    sessions_dir = get_kinqhi_home() / "sessions"
     try:
         deleted = db.delete_session(target, sessions_dir=sessions_dir)
     except Exception as e:
@@ -5087,7 +5087,7 @@ def _(rid, params: dict) -> dict:
 
     Desktop parity with the CLI ``/handoff`` command: we only write
     ``handoff_state='pending'`` onto the persisted session row. The actual
-    transfer is performed by the separate ``hermes gateway`` process, whose
+    transfer is performed by the separate ``kinqhi gateway`` process, whose
     ``_handoff_watcher`` claims the row, re-binds the session to the platform's
     home channel, and forges a synthetic turn. The desktop then polls
     ``handoff.state`` for the terminal result.
@@ -5286,12 +5286,12 @@ def _(rid, params: dict) -> dict:
 # Ink side can branch on the typed billing error code (insufficient_scope,
 # rate_limited, no_payment_method, …) to render the right affordance instead of
 # landing in a generic catch. The data-building lives in the shared core
-# (agent/billing_view.py + hermes_cli/nous_billing.py) — same as /credits.
+# (agent/billing_view.py + kinqhi_cli/nous_billing.py) — same as /credits.
 
 
 def _serialize_billing_error(exc) -> dict:
     """Map a BillingError into the result.error envelope the TUI branches on."""
-    from hermes_cli.nous_billing import (
+    from kinqhi_cli.nous_billing import (
         BillingRateLimited,
         BillingScopeRequired,
     )
@@ -5390,7 +5390,7 @@ def _(rid, params: dict) -> dict:
     supplied, the server-side core mints a fresh one and returns it so the TUI can
     reuse it on retry of the SAME purchase.
     """
-    from hermes_cli.nous_billing import BillingError, post_charge
+    from kinqhi_cli.nous_billing import BillingError, post_charge
     from agent.billing_view import new_idempotency_key
 
     amount = params.get("amount_usd")
@@ -5414,7 +5414,7 @@ def _(rid, params: dict) -> dict:
 
     The poll. Caller drives the 2s/5-min cadence; this is a single status read.
     """
-    from hermes_cli.nous_billing import BillingError, get_charge_status
+    from kinqhi_cli.nous_billing import BillingError, get_charge_status
 
     charge_id = params.get("charge_id")
     if not charge_id:
@@ -5443,7 +5443,7 @@ def _(rid, params: dict) -> dict:
 
     params: {enabled: bool, threshold: number, top_up_amount: number}.
     """
-    from hermes_cli.nous_billing import BillingError, patch_auto_top_up
+    from kinqhi_cli.nous_billing import BillingError, patch_auto_top_up
 
     try:
         enabled = bool(params.get("enabled"))
@@ -5475,7 +5475,7 @@ def _(rid, params: dict) -> dict:
     """
     sid = params.get("session_id") or ""
     try:
-        from hermes_cli.auth import step_up_nous_billing_scope
+        from kinqhi_cli.auth import step_up_nous_billing_scope
 
         def _on_verification(url: str, code: str) -> None:
             _emit(
@@ -5498,7 +5498,7 @@ def _(rid, params: dict) -> dict:
     if err:
         return err
 
-    from hermes_constants import display_hermes_home
+    from kinqhi_constants import display_kinqhi_home
 
     key = session.get("session_key") or params.get("session_id") or ""
     agent = session.get("agent")
@@ -5529,10 +5529,10 @@ def _(rid, params: dict) -> dict:
     provider = getattr(agent, "provider", None) or "unknown"
     model = getattr(agent, "model", None) or "(unknown)"
     lines = [
-        "Hermes TUI Status",
+        "Kinqhi TUI Status",
         "",
         f"Session ID: {key}",
-        f"Path: {display_hermes_home()}",
+        f"Path: {display_kinqhi_home()}",
     ]
     title = (meta.get("title") or "").strip()
     if title:
@@ -5703,10 +5703,10 @@ def _(rid, params: dict) -> dict:
         return err
 
     agent = session["agent"]
-    # Mirror the classic CLI /save: snapshot under the Hermes profile home
-    # (~/.hermes/sessions/saved/) rather than the project/workspace CWD, and
+    # Mirror the classic CLI /save: snapshot under the Kinqhi profile home
+    # (~/.kinqhi/sessions/saved/) rather than the project/workspace CWD, and
     # include the system prompt so the export matches the dashboard save.
-    saved_dir = get_hermes_home() / "sessions" / "saved"
+    saved_dir = get_kinqhi_home() / "sessions" / "saved"
     try:
         saved_dir.mkdir(parents=True, exist_ok=True)
     except Exception as e:
@@ -5905,14 +5905,14 @@ def _(rid, params: dict) -> dict:
 # from the event stream).  On turn-complete it posts the final tree here;
 # /replay and /replay-diff fetch past snapshots by session_id + filename.
 #
-# Layout:  $HERMES_HOME/spawn-trees/<session_id>/<timestamp>.json
+# Layout:  $KINQHI_HOME/spawn-trees/<session_id>/<timestamp>.json
 # Each file contains { session_id, started_at, finished_at, subagents: [...] }.
 
 
 def _spawn_trees_root():
-    from hermes_constants import get_hermes_home
+    from kinqhi_constants import get_kinqhi_home
 
-    root = get_hermes_home() / "spawn-trees"
+    root = get_kinqhi_home() / "spawn-trees"
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -6396,7 +6396,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
     def run():
         approval_token = None
         session_tokens = []
-        home_token = None  # per-turn HERMES_HOME override for a resumed remote profile
+        home_token = None  # per-turn KINQHI_HOME override for a resumed remote profile
         goal_followup = None  # set by the post-turn goal hook below
         try:
             from tools.approval import (
@@ -6408,7 +6408,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
             session_tokens = _set_session_context(session["session_key"])
             _profile_home_str = session.get("profile_home")
             if _profile_home_str:
-                home_token = set_hermes_home_override(_profile_home_str)
+                home_token = set_kinqhi_home_override(_profile_home_str)
             # The sudo password callback is thread-local (tools.terminal_tool
             # _callback_tls), so wiring it on the build thread doesn't reach this
             # turn thread — terminal sudo prompts would fall through to /dev/tty
@@ -6470,7 +6470,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
                         _read_main_model,
                         _read_main_provider,
                     )
-                    from hermes_cli.config import load_config as _tui_load_config
+                    from kinqhi_cli.config import load_config as _tui_load_config
 
                     _cfg = _tui_load_config()
                     _mode = decide_image_input_mode(
@@ -6616,7 +6616,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
             # outcome. Mirrors gateway/run._post_turn_goal_continuation.
             if status == "complete" and isinstance(raw, str) and raw.strip():
                 try:
-                    from hermes_cli.goals import GoalManager
+                    from kinqhi_cli.goals import GoalManager
 
                     sid_key = session.get("session_key") or ""
                     if sid_key:
@@ -6704,14 +6704,14 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
                 and _voice_tts_enabled()
             ):
                 try:
-                    from hermes_cli.voice import speak_text
+                    from kinqhi_cli.voice import speak_text
 
                     spoken = raw
                     threading.Thread(
                         target=speak_text, args=(spoken,), daemon=True
                     ).start()
                 except ImportError:
-                    logger.warning("voice TTS skipped: hermes_cli.voice unavailable")
+                    logger.warning("voice TTS skipped: kinqhi_cli.voice unavailable")
                 except Exception as e:
                     logger.warning("voice TTS dispatch failed: %s", e)
         except Exception as e:
@@ -6739,7 +6739,7 @@ def _run_prompt_submit(rid, sid: str, session: dict, text: Any) -> None:
             except Exception:
                 pass
             if home_token is not None:
-                reset_hermes_home_override(home_token)
+                reset_kinqhi_home_override(home_token)
             _clear_session_context(session_tokens)
             with session["history_lock"]:
                 session["running"] = False
@@ -6811,12 +6811,12 @@ def _(rid, params: dict) -> dict:
     if err:
         return err
     try:
-        from hermes_cli.clipboard import has_clipboard_image, save_clipboard_image
+        from kinqhi_cli.clipboard import has_clipboard_image, save_clipboard_image
     except Exception as e:
         return _err(rid, 5027, f"clipboard unavailable: {e}")
 
     session["image_counter"] = session.get("image_counter", 0) + 1
-    img_dir = _hermes_home / "images"
+    img_dir = _kinqhi_home / "images"
     img_dir.mkdir(parents=True, exist_ok=True)
     img_path = (
         img_dir
@@ -6964,7 +6964,7 @@ def _queue_attached_image(session: dict, img_bytes: bytes, ext: str, *, prefix: 
     the existing native-image-attach pipeline. Returns the written path.
     """
     session["image_counter"] = session.get("image_counter", 0) + 1
-    img_dir = _hermes_home / "images"
+    img_dir = _kinqhi_home / "images"
     img_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     img_path = img_dir / f"{prefix}_{ts}_{session['image_counter']}{ext}"
@@ -7192,7 +7192,7 @@ def _attachment_ref_path(session: dict, target: Path) -> str:
 
 
 def _desktop_attachment_dir(session: dict) -> Path:
-    root = Path(_session_cwd(session)).resolve() / ".hermes" / "desktop-attachments"
+    root = Path(_session_cwd(session)).resolve() / ".kinqhi" / "desktop-attachments"
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -7272,10 +7272,10 @@ def _stage_session_file_attachment(
       1. The path resolves to a file already INSIDE the session workspace — use
          it as-is (no copy, ``uploaded=False``).
       2. The path resolves to a gateway-visible file OUTSIDE the workspace — copy
-         it into ``.hermes/desktop-attachments/`` so the ``@file:`` ref resolves.
+         it into ``.kinqhi/desktop-attachments/`` so the ``@file:`` ref resolves.
       3. The path doesn't exist on the gateway (the common remote case: it's a
          path on the CLIENT's disk) — decode the uploaded ``data_url`` bytes and
-         write them into ``.hermes/desktop-attachments/``.
+         write them into ``.kinqhi/desktop-attachments/``.
 
     Returns ``(stored_path, uploaded)``.
     """
@@ -7492,14 +7492,14 @@ def _(rid, params: dict) -> dict:
                 if has_history
                 else None
             ),
-            "Restart exactly the app intended for the Preview URL, not Hermes Desktop itself.",
+            "Restart exactly the app intended for the Preview URL, not Kinqhi Desktop itself.",
             "The Preview URL and port are the target. Preserve that target unless you conclude it is impossible.",
             "If the prior conversation shows a specific command that bound this URL/port, prefer re-running THAT exact command (in the same cwd) over guessing a new one.",
-            "First inspect what process, if any, owns the Preview URL port. If a stale server exists, inspect its cwd and prefer that cwd over the Hermes/Desktop process cwd.",
+            "First inspect what process, if any, owns the Preview URL port. If a stale server exists, inspect its cwd and prefer that cwd over the Kinqhi/Desktop process cwd.",
             "The Current working directory is only a hint. Do not assume it is the preview app root when the port owner or files indicate another root.",
             "If the console shows a module-script MIME error for src/main.tsx or similar, a static server is serving source files. Do not restart python -m http.server or any dumb static server for that app.",
             "For module-script MIME failures, inspect package.json/vite config in the candidate app root and start the real dev server/bundler (for example npm/pnpm/yarn dev) so module transforms happen.",
-            "Before declaring success, verify the Preview URL responds with the intended app, not Hermes Desktop. If it serves Hermes/Desktop UI or another unrelated app, stop that process and report failure.",
+            "Before declaring success, verify the Preview URL responds with the intended app, not Kinqhi Desktop. If it serves Kinqhi/Desktop UI or another unrelated app, stop that process and report failure.",
             "Do not modify files. Do not ask the user unless blocked.",
             "Prefer existing project scripts or commands when they are clear.",
             "If a stale process owns the needed port, handle it safely.",
@@ -7658,7 +7658,7 @@ def _(rid, params: dict) -> dict:
                         4009,
                         "session busy — /interrupt the current turn before switching models",
                     )
-                from hermes_cli.model_switch import parse_model_flags
+                from kinqhi_cli.model_switch import parse_model_flags
 
                 parsed_flags = parse_model_flags(value)
                 _model_input, explicit_provider, _persist_global, _force_refresh, _is_session = parsed_flags
@@ -7726,7 +7726,7 @@ def _(rid, params: dict) -> dict:
 
         overrides = None
         if nv == "fast":
-            from hermes_cli.models import resolve_fast_mode_overrides
+            from kinqhi_cli.models import resolve_fast_mode_overrides
 
             target_model = (
                 getattr(agent, "model", None) if agent is not None else _resolve_model()
@@ -7861,13 +7861,13 @@ def _(rid, params: dict) -> dict:
                         _session_info(agent, session),
                     )
             else:
-                current = is_truthy_value(os.environ.get("HERMES_YOLO_MODE"))
+                current = is_truthy_value(os.environ.get("KINQHI_YOLO_MODE"))
                 enable = _resolve_toggle(current)
                 if enable:
-                    os.environ["HERMES_YOLO_MODE"] = "1"
+                    os.environ["KINQHI_YOLO_MODE"] = "1"
                     nv = "1"
                 else:
-                    os.environ.pop("HERMES_YOLO_MODE", None)
+                    os.environ.pop("KINQHI_YOLO_MODE", None)
                     nv = "0"
             return _ok(rid, {"key": key, "value": nv, "scope": "session"})
         except Exception as e:
@@ -7875,7 +7875,7 @@ def _(rid, params: dict) -> dict:
 
     if key == "reasoning":
         try:
-            from hermes_constants import parse_reasoning_effort
+            from kinqhi_constants import parse_reasoning_effort
 
             arg = str(value or "").strip().lower()
             if arg in {"show", "on"}:
@@ -8117,7 +8117,7 @@ def _(rid, params: dict) -> dict:
     key = params.get("key", "")
     if key == "provider":
         try:
-            from hermes_cli.models import list_available_providers, normalize_provider
+            from kinqhi_cli.models import list_available_providers, normalize_provider
 
             model = _resolve_model()
             parts = model.split("/", 1)
@@ -8134,9 +8134,9 @@ def _(rid, params: dict) -> dict:
         except Exception as e:
             return _err(rid, 5013, str(e))
     if key == "profile":
-        from hermes_constants import display_hermes_home
+        from kinqhi_constants import display_kinqhi_home
 
-        return _ok(rid, {"home": str(_hermes_home), "display": display_hermes_home()})
+        return _ok(rid, {"home": str(_kinqhi_home), "display": display_kinqhi_home()})
     if key == "project":
         cfg_terminal = _load_cfg().get("terminal") or {}
         raw = str(params.get("cwd", "") or cfg_terminal.get("cwd", "") or "").strip()
@@ -8239,7 +8239,7 @@ def _(rid, params: dict) -> dict:
         display = _load_cfg().get("display")
         return _ok(rid, {"value": _display_mouse_tracking(display)})
     if key == "mtime":
-        cfg_path = _hermes_home / "config.yaml"
+        cfg_path = _kinqhi_home / "config.yaml"
         try:
             return _ok(
                 rid, {"mtime": cfg_path.stat().st_mtime if cfg_path.exists() else 0}
@@ -8252,7 +8252,7 @@ def _(rid, params: dict) -> dict:
 @method("setup.status")
 def _(rid, params: dict) -> dict:
     try:
-        from hermes_cli.main import _has_any_provider_configured
+        from kinqhi_cli.main import _has_any_provider_configured
 
         return _ok(rid, {"provider_configured": bool(_has_any_provider_configured())})
     except Exception as e:
@@ -8271,9 +8271,9 @@ def _(rid, params: dict) -> dict:
     surface onboarding before the user submits a doomed prompt.
     """
     try:
-        from hermes_cli.runtime_provider import resolve_runtime_provider
-        from hermes_cli.auth import has_usable_secret
-        from hermes_cli.main import _has_any_provider_configured
+        from kinqhi_cli.runtime_provider import resolve_runtime_provider
+        from kinqhi_cli.auth import has_usable_secret
+        from kinqhi_cli.main import _has_any_provider_configured
 
         runtime = resolve_runtime_provider(requested=None)
         provider_configured = bool(_has_any_provider_configured())
@@ -8290,7 +8290,7 @@ def _(rid, params: dict) -> dict:
                     "provider": provider,
                     "model": runtime.get("model"),
                     "source": source,
-                    "error": "No Hermes provider is configured.",
+                    "error": "No Kinqhi provider is configured.",
                 },
             )
 
@@ -8407,7 +8407,7 @@ def _(rid, params: dict) -> dict:
         user_confirm = bool(params.get("confirm", False))
         if not user_confirm:
             try:
-                from hermes_cli.config import load_config as _load_config
+                from kinqhi_cli.config import load_config as _load_config
 
                 _cfg = _load_config()
                 _approvals = _cfg.get("approvals") if isinstance(_cfg, dict) else None
@@ -8484,8 +8484,8 @@ def _(rid, params: dict) -> dict:
 
 @method("reload.env")
 def _(rid, params: dict) -> dict:
-    """Re-read ``~/.hermes/.env`` into the gateway process via
-    ``hermes_cli.config.reload_env``, matching classic CLI's ``/reload``
+    """Re-read ``~/.kinqhi/.env`` into the gateway process via
+    ``kinqhi_cli.config.reload_env``, matching classic CLI's ``/reload``
     handler.  Newly added API keys take effect on the next agent call
     without restarting the TUI.
 
@@ -8495,7 +8495,7 @@ def _(rid, params: dict) -> dict:
     should follow with ``/new``.
     """
     try:
-        from hermes_cli.config import reload_env
+        from kinqhi_cli.config import reload_env
 
         count = reload_env()
         return _ok(rid, {"updated": int(count)})
@@ -8548,7 +8548,7 @@ _WORKER_BLOCKED_COMMANDS: frozenset[str] = frozenset({"snapshot", "snap"})
 def _(rid, params: dict) -> dict:
     """Registry-backed slash metadata for the TUI — categorized, no aliases."""
     try:
-        from hermes_cli.commands import (
+        from kinqhi_cli.commands import (
             COMMAND_REGISTRY,
             SUBCOMMANDS,
             _build_description,
@@ -8646,22 +8646,22 @@ def _(rid, params: dict) -> dict:
 def _cli_exec_blocked(argv: list[str]) -> str | None:
     """Return user hint if this argv must not run headless in the gateway process."""
     if not argv:
-        return "bare `hermes` is interactive — use `/hermes chat -q …` or run `hermes` in another terminal"
+        return "bare `kinqhi` is interactive — use `/kinqhi chat -q …` or run `kinqhi` in another terminal"
     a0 = argv[0].lower()
     if a0 == "setup":
-        return "`hermes setup` needs a full terminal — run it outside the TUI"
+        return "`kinqhi setup` needs a full terminal — run it outside the TUI"
     if a0 == "gateway":
-        return "`hermes gateway` is long-running — run it in another terminal"
+        return "`kinqhi gateway` is long-running — run it in another terminal"
     if a0 == "sessions" and len(argv) > 1 and argv[1].lower() == "browse":
-        return "`hermes sessions browse` is interactive — use /resume here, or run browse in another terminal"
+        return "`kinqhi sessions browse` is interactive — use /resume here, or run browse in another terminal"
     if a0 == "config" and len(argv) > 1 and argv[1].lower() == "edit":
-        return "`hermes config edit` needs $EDITOR in a real terminal"
+        return "`kinqhi config edit` needs $EDITOR in a real terminal"
     return None
 
 
 @method("cli.exec")
 def _(rid, params: dict) -> dict:
-    """Run `python -m hermes_cli.main` with argv; capture stdout/stderr (non-interactive only)."""
+    """Run `python -m kinqhi_cli.main` with argv; capture stdout/stderr (non-interactive only)."""
     argv = params.get("argv", [])
     if not isinstance(argv, list) or not all(isinstance(x, str) for x in argv):
         return _err(rid, 4003, "argv must be list[str]")
@@ -8670,7 +8670,7 @@ def _(rid, params: dict) -> dict:
         return _ok(rid, {"blocked": True, "hint": hint, "code": -1, "output": ""})
     try:
         r = subprocess.run(
-            [sys.executable, "-m", "hermes_cli.main", *argv],
+            [sys.executable, "-m", "kinqhi_cli.main", *argv],
             capture_output=True,
             text=True,
             timeout=min(int(params.get("timeout", 240)), 600),
@@ -8692,7 +8692,7 @@ def _(rid, params: dict) -> dict:
 @method("command.resolve")
 def _(rid, params: dict) -> dict:
     try:
-        from hermes_cli.commands import resolve_command
+        from kinqhi_cli.commands import resolve_command
 
         r = resolve_command(params.get("name", ""))
         if r:
@@ -8711,7 +8711,7 @@ def _(rid, params: dict) -> dict:
 
 def _resolve_name(name: str) -> str:
     try:
-        from hermes_cli.commands import resolve_command
+        from kinqhi_cli.commands import resolve_command
 
         r = resolve_command(name)
         return r.name if r else name
@@ -8755,7 +8755,7 @@ def _(rid, params: dict) -> dict:
             return _ok(rid, {"type": "alias", "target": qc.get("target", "")})
 
     try:
-        from hermes_cli.plugins import (
+        from kinqhi_cli.plugins import (
             get_plugin_command_handler,
             resolve_plugin_command_result,
         )
@@ -8858,7 +8858,7 @@ def _(rid, params: dict) -> dict:
         if not session:
             return _err(rid, 4001, "no active session")
         try:
-            from hermes_cli.goals import GoalManager
+            from kinqhi_cli.goals import GoalManager
         except Exception as exc:
             return _err(rid, 5030, f"goals unavailable: {exc}")
 
@@ -9058,7 +9058,7 @@ def _(rid, params: dict) -> dict:
 
     _paste_counter += 1
     line_count = text.count("\n") + 1
-    paste_dir = _hermes_home / "pastes"
+    paste_dir = _kinqhi_home / "pastes"
     paste_dir.mkdir(parents=True, exist_ok=True)
 
     from datetime import datetime
@@ -9478,7 +9478,7 @@ def _(rid, params: dict) -> dict:
         return _ok(rid, {"items": []})
 
     try:
-        from hermes_cli.commands import SlashCommandCompleter
+        from kinqhi_cli.commands import SlashCommandCompleter
         from prompt_toolkit.document import Document
         from prompt_toolkit.formatted_text import to_plain_text
 
@@ -9553,7 +9553,7 @@ def _(rid, params: dict) -> dict:
 @method("model.options")
 def _(rid, params: dict) -> dict:
     try:
-        from hermes_cli.inventory import build_models_payload, load_picker_context
+        from kinqhi_cli.inventory import build_models_payload, load_picker_context
 
         session = _sessions.get(params.get("session_id", ""))
         agent = session.get("agent") if session else None
@@ -9602,9 +9602,9 @@ def _(rid, params: dict) -> dict:
     model.options entries) on success.
     """
     try:
-        from hermes_cli.auth import PROVIDER_REGISTRY
-        from hermes_cli.config import is_managed, save_env_value
-        from hermes_cli.inventory import build_models_payload, load_picker_context
+        from kinqhi_cli.auth import PROVIDER_REGISTRY
+        from kinqhi_cli.config import is_managed, save_env_value
+        from kinqhi_cli.inventory import build_models_payload, load_picker_context
 
         slug = (params.get("slug") or "").strip()
         api_key = (params.get("api_key") or "").strip()
@@ -9622,12 +9622,12 @@ def _(rid, params: dict) -> dict:
                 rid,
                 4003,
                 f"{pconfig.name} uses {pconfig.auth_type} auth — "
-                f"run `hermes model` to configure",
+                f"run `kinqhi model` to configure",
             )
         if not pconfig.api_key_env_vars:
             return _err(rid, 4004, f"no env var defined for {pconfig.name}")
 
-        # Save the key to ~/.hermes/.env
+        # Save the key to ~/.kinqhi/.env
         env_var = pconfig.api_key_env_vars[0]
         save_env_value(env_var, api_key)
         # Also set in current process so the refreshed inventory sees it.
@@ -9682,8 +9682,8 @@ def _(rid, params: dict) -> dict:
     Returns success status and the provider's slug.
     """
     try:
-        from hermes_cli.auth import PROVIDER_REGISTRY, clear_provider_auth
-        from hermes_cli.config import remove_env_value
+        from kinqhi_cli.auth import PROVIDER_REGISTRY, clear_provider_auth
+        from kinqhi_cli.config import remove_env_value
 
         slug = (params.get("slug") or "").strip()
         if not slug:
@@ -9831,7 +9831,7 @@ def _(rid, params: dict) -> dict:
     resolve_plugin_command_result = None
     if _cmd_base:
         try:
-            from hermes_cli.plugins import (
+            from kinqhi_cli.plugins import (
                 get_plugin_command_handler,
                 resolve_plugin_command_result,
             )
@@ -9902,12 +9902,12 @@ def _voice_mode_enabled() -> bool:
     avoids the TUI auto-starting in REC the next time the user opens it
     just because they happened to enable voice in a prior session.
     """
-    return os.environ.get("HERMES_VOICE", "").strip() == "1"
+    return os.environ.get("KINQHI_VOICE", "").strip() == "1"
 
 
 def _voice_tts_enabled() -> bool:
     """Whether agent replies should be spoken back via TTS (runtime only)."""
-    return os.environ.get("HERMES_VOICE_TTS", "").strip() == "1"
+    return os.environ.get("KINQHI_VOICE_TTS", "").strip() == "1"
 
 
 def _voice_cfg_dict() -> dict:
@@ -9983,13 +9983,13 @@ def _(rid, params: dict) -> dict:
         # Runtime-only flag (CLI parity) — no _write_config_key, so the
         # next TUI launch starts with voice OFF instead of auto-REC from a
         # persisted stale toggle.
-        os.environ["HERMES_VOICE"] = "1" if enabled else "0"
+        os.environ["KINQHI_VOICE"] = "1" if enabled else "0"
 
         if not enabled:
             # Disabling the mode must tear the continuous loop down; the
             # loop holds the microphone and would otherwise keep running.
             try:
-                from hermes_cli.voice import stop_continuous
+                from kinqhi_cli.voice import stop_continuous
 
                 stop_continuous()
             except ImportError:
@@ -9998,7 +9998,7 @@ def _(rid, params: dict) -> dict:
                 logger.warning("voice: stop_continuous failed during toggle off: %s", e)
 
             # Clear TTS so it can be toggled independently after voice is off.
-            os.environ["HERMES_VOICE_TTS"] = "0"
+            os.environ["KINQHI_VOICE_TTS"] = "0"
 
         return _ok(
             rid,
@@ -10014,7 +10014,7 @@ def _(rid, params: dict) -> dict:
             return _err(rid, 4014, "enable voice mode first: /voice on")
         new_value = not _voice_tts_enabled()
         # Runtime-only flag (CLI parity) — see voice.toggle on/off above.
-        os.environ["HERMES_VOICE_TTS"] = "1" if new_value else "0"
+        os.environ["KINQHI_VOICE_TTS"] = "1" if new_value else "0"
         # Include ``record_key`` on every branch so a /voice tts toggle
         # doesn't reset the TUI's cached shortcut to the default when a
         # user has a custom binding configured (Copilot review, round 2
@@ -10055,7 +10055,7 @@ def _(rid, params: dict) -> dict:
                 global _voice_event_sid
                 _voice_event_sid = params.get("session_id") or _voice_event_sid
 
-            from hermes_cli.voice import start_continuous
+            from kinqhi_cli.voice import start_continuous
 
             # Shape-safe lookups: malformed ``voice:`` YAML (bool/scalar/list)
             # must not crash /voice with a 5025 — fall back to VAD defaults.
@@ -10096,7 +10096,7 @@ def _(rid, params: dict) -> dict:
         with _voice_sid_lock:
             _voice_event_sid = params.get("session_id") or _voice_event_sid
 
-        from hermes_cli.voice import stop_continuous
+        from kinqhi_cli.voice import stop_continuous
 
         stop_continuous(force_transcribe=True)
         return _ok(rid, {"status": "stopped"})
@@ -10114,7 +10114,7 @@ def _(rid, params: dict) -> dict:
     if not text:
         return _err(rid, 4020, "text required")
     try:
-        from hermes_cli.voice import speak_text
+        from kinqhi_cli.voice import speak_text
 
         threading.Thread(target=speak_text, args=(text,), daemon=True).start()
         return _ok(rid, {"status": "speaking"})
@@ -10280,7 +10280,7 @@ def _resolve_browser_cdp_url() -> str:
     if env_url:
         return env_url
     try:
-        from hermes_cli.config import read_raw_config
+        from kinqhi_cli.config import read_raw_config
 
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {}) if isinstance(cfg, dict) else {}
@@ -10339,7 +10339,7 @@ def _normalize_cdp_url(parsed) -> str:
 
 
 def _failure_messages(url: str, port: int, system: str) -> list[str]:
-    from hermes_cli.browser_connect import manual_chrome_debug_command
+    from kinqhi_cli.browser_connect import manual_chrome_debug_command
 
     command = manual_chrome_debug_command(port, system)
     hint = (
@@ -10377,7 +10377,7 @@ def _(rid, params: dict) -> dict:
 def _browser_connect(rid, params: dict) -> dict:
     import platform
 
-    from hermes_cli.browser_connect import DEFAULT_BROWSER_CDP_URL
+    from kinqhi_cli.browser_connect import DEFAULT_BROWSER_CDP_URL
     from tools.browser_tool import cleanup_all_browsers
     from urllib.parse import urlparse
 
@@ -10436,7 +10436,7 @@ def _browser_connect(rid, params: dict) -> dict:
             ok = any(_http_ok(p, timeout=2.0) for p in probes)
 
             if not ok and _is_default_local_cdp(parsed):
-                from hermes_cli.browser_connect import try_launch_chrome_debug
+                from kinqhi_cli.browser_connect import try_launch_chrome_debug
 
                 announce(
                     "Chromium-family browser isn't running with remote debugging — attempting to launch..."
@@ -10500,7 +10500,7 @@ def _browser_disconnect(rid) -> dict:
 @method("plugins.list")
 def _(rid, params: dict) -> dict:
     try:
-        from hermes_cli.plugins import get_plugin_manager
+        from kinqhi_cli.plugins import get_plugin_manager
 
         return _ok(
             rid,
@@ -10524,9 +10524,9 @@ def _(rid, params: dict) -> dict:
     try:
         cfg = _load_cfg()
         model = _resolve_model()
-        api_key = os.environ.get("HERMES_API_KEY", "") or cfg.get("api_key", "")
+        api_key = os.environ.get("KINQHI_API_KEY", "") or cfg.get("api_key", "")
         masked = f"****{api_key[-4:]}" if len(api_key) > 4 else "(not set)"
-        base_url = os.environ.get("HERMES_BASE_URL", "") or cfg.get("base_url", "")
+        base_url = os.environ.get("KINQHI_BASE_URL", "") or cfg.get("base_url", "")
 
         sections = [
             {
@@ -10549,7 +10549,7 @@ def _(rid, params: dict) -> dict:
                 "title": "Environment",
                 "rows": [
                     ["Working Dir", os.getcwd()],
-                    ["Config File", str(_hermes_home / "config.yaml")],
+                    ["Config File", str(_kinqhi_home / "config.yaml")],
                 ],
             },
         ]
@@ -10641,8 +10641,8 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 4018, "names required")
 
     try:
-        from hermes_cli.config import load_config, save_config
-        from hermes_cli.tools_config import (
+        from kinqhi_cli.config import load_config, save_config
+        from kinqhi_cli.tools_config import (
             CONFIGURABLE_TOOLSETS,
             _apply_mcp_change,
             _apply_toolset_change,
@@ -10784,7 +10784,7 @@ def _(rid, params: dict) -> dict:
     action, query = params.get("action", "list"), params.get("query", "")
     try:
         if action == "list":
-            from hermes_cli.banner import get_available_skills
+            from kinqhi_cli.banner import get_available_skills
 
             return _ok(rid, {"skills": get_available_skills()})
         if action == "search":
@@ -10812,7 +10812,7 @@ def _(rid, params: dict) -> dict:
                 },
             )
         if action == "install":
-            from hermes_cli.skills_hub import do_install
+            from kinqhi_cli.skills_hub import do_install
 
             class _Q:
                 def print(self, *a, **k):
@@ -10821,7 +10821,7 @@ def _(rid, params: dict) -> dict:
             do_install(query, skip_confirm=True, console=_Q())
             return _ok(rid, {"installed": True, "name": query})
         if action == "browse":
-            from hermes_cli.skills_hub import browse_skills
+            from kinqhi_cli.skills_hub import browse_skills
 
             pg = int(params.get("page", 0) or 0) or (
                 int(query) if query.isdigit() else 1
@@ -10830,7 +10830,7 @@ def _(rid, params: dict) -> dict:
                 rid, browse_skills(page=pg, page_size=int(params.get("page_size", 20)))
             )
         if action == "inspect":
-            from hermes_cli.skills_hub import inspect_skill
+            from kinqhi_cli.skills_hub import inspect_skill
 
             return _ok(rid, {"info": inspect_skill(query) or {}})
         return _err(rid, 4017, f"unknown skills action: {action}")
@@ -10868,7 +10868,7 @@ def _(rid, params: dict) -> dict:
     """List installed plugins with activation state, or toggle one on/off.
 
     Backs the TUI Plugins Hub. Uses the same disk-discovery + enable/disable
-    primitives as ``hermes plugins`` / the dashboard, so the three surfaces
+    primitives as ``kinqhi plugins`` / the dashboard, so the three surfaces
     agree on what's installed and what's enabled.
 
     Actions:
@@ -10879,7 +10879,7 @@ def _(rid, params: dict) -> dict:
     """
     action = params.get("action", "list")
     try:
-        from hermes_cli.plugins_cmd import (
+        from kinqhi_cli.plugins_cmd import (
             _discover_all_plugins,
             _get_disabled_set,
             _get_enabled_set,
@@ -10917,7 +10917,7 @@ def _(rid, params: dict) -> dict:
             )
 
         if action == "toggle":
-            from hermes_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
+            from kinqhi_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
 
             name = (params.get("name") or "").strip()
             if not name:

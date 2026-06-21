@@ -7,15 +7,15 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import kanban_db as kb
+from kinqhi_cli import kanban_db as kb
 
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with an empty kanban DB."""
+    """Isolated KINQHI_HOME with an empty kanban DB."""
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("KINQHI_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home

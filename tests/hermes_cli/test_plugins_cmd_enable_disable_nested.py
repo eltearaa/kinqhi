@@ -47,44 +47,44 @@ def nested_plugin_env(tmp_path):
 
 
 class TestResolvePluginKey:
-    @patch("hermes_cli.plugins.get_bundled_plugins_dir")
-    @patch("hermes_cli.plugins_cmd._plugins_dir")
+    @patch("kinqhi_cli.plugins.get_bundled_plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._plugins_dir")
     def test_full_key_resolves_to_itself(self, mock_user, mock_bundled, nested_plugin_env):
-        from hermes_cli.plugins_cmd import _resolve_plugin_key
+        from kinqhi_cli.plugins_cmd import _resolve_plugin_key
         mock_user.return_value = nested_plugin_env
         mock_bundled.return_value = nested_plugin_env / "nonexistent"
         assert _resolve_plugin_key("observability/nemo_relay") == "observability/nemo_relay"
 
-    @patch("hermes_cli.plugins.get_bundled_plugins_dir")
-    @patch("hermes_cli.plugins_cmd._plugins_dir")
+    @patch("kinqhi_cli.plugins.get_bundled_plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._plugins_dir")
     def test_bare_leaf_name_resolves_to_key(self, mock_user, mock_bundled, nested_plugin_env):
-        from hermes_cli.plugins_cmd import _resolve_plugin_key
+        from kinqhi_cli.plugins_cmd import _resolve_plugin_key
         mock_user.return_value = nested_plugin_env
         mock_bundled.return_value = nested_plugin_env / "nonexistent"
         # "nemo_relay" (bare) must normalize to the path-derived key.
         assert _resolve_plugin_key("nemo_relay") == "observability/nemo_relay"
 
-    @patch("hermes_cli.plugins.get_bundled_plugins_dir")
-    @patch("hermes_cli.plugins_cmd._plugins_dir")
+    @patch("kinqhi_cli.plugins.get_bundled_plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._plugins_dir")
     def test_flat_plugin_resolves_to_name(self, mock_user, mock_bundled, nested_plugin_env):
-        from hermes_cli.plugins_cmd import _resolve_plugin_key
+        from kinqhi_cli.plugins_cmd import _resolve_plugin_key
         mock_user.return_value = nested_plugin_env
         mock_bundled.return_value = nested_plugin_env / "nonexistent"
         assert _resolve_plugin_key("disk-cleanup") == "disk-cleanup"
 
-    @patch("hermes_cli.plugins.get_bundled_plugins_dir")
-    @patch("hermes_cli.plugins_cmd._plugins_dir")
+    @patch("kinqhi_cli.plugins.get_bundled_plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._plugins_dir")
     def test_unknown_returns_none(self, mock_user, mock_bundled, nested_plugin_env):
-        from hermes_cli.plugins_cmd import _resolve_plugin_key
+        from kinqhi_cli.plugins_cmd import _resolve_plugin_key
         mock_user.return_value = nested_plugin_env
         mock_bundled.return_value = nested_plugin_env / "nonexistent"
         assert _resolve_plugin_key("does-not-exist") is None
 
-    @patch("hermes_cli.plugins.get_bundled_plugins_dir")
-    @patch("hermes_cli.plugins_cmd._plugins_dir")
+    @patch("kinqhi_cli.plugins.get_bundled_plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._plugins_dir")
     def test_ambiguous_leaf_name_returns_none(self, mock_user, mock_bundled, tmp_path):
         """Same leaf name under two categories must NOT silently pick one."""
-        from hermes_cli.plugins_cmd import _resolve_plugin_key
+        from kinqhi_cli.plugins_cmd import _resolve_plugin_key
         _make_category_plugin(tmp_path, "image_gen", "openai", {"name": "image-gen-openai"})
         _make_category_plugin(tmp_path, "model-providers", "openai", {"name": "mp-openai"})
         mock_user.return_value = tmp_path
@@ -100,17 +100,17 @@ class TestResolvePluginKey:
 
 
 class TestEnableDisableNested:
-    @patch("hermes_cli.plugins.get_bundled_plugins_dir")
-    @patch("hermes_cli.plugins_cmd._plugins_dir")
-    @patch("hermes_cli.plugins_cmd._save_disabled_set")
-    @patch("hermes_cli.plugins_cmd._save_enabled_set")
-    @patch("hermes_cli.plugins_cmd._get_disabled_set", return_value=set())
-    @patch("hermes_cli.plugins_cmd._get_enabled_set", return_value=set())
+    @patch("kinqhi_cli.plugins.get_bundled_plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._save_disabled_set")
+    @patch("kinqhi_cli.plugins_cmd._save_enabled_set")
+    @patch("kinqhi_cli.plugins_cmd._get_disabled_set", return_value=set())
+    @patch("kinqhi_cli.plugins_cmd._get_enabled_set", return_value=set())
     def test_enable_bare_name_writes_key(
         self, mock_en, mock_dis, mock_save_en, mock_save_dis,
         mock_user, mock_bundled, nested_plugin_env,
     ):
-        from hermes_cli.plugins_cmd import cmd_enable
+        from kinqhi_cli.plugins_cmd import cmd_enable
         mock_user.return_value = nested_plugin_env
         mock_bundled.return_value = nested_plugin_env / "nonexistent"
 
@@ -122,17 +122,17 @@ class TestEnableDisableNested:
         assert "observability/nemo_relay" in saved
         assert "nemo_relay" not in saved or "observability/nemo_relay" in saved
 
-    @patch("hermes_cli.plugins.get_bundled_plugins_dir")
-    @patch("hermes_cli.plugins_cmd._plugins_dir")
-    @patch("hermes_cli.plugins_cmd._save_disabled_set")
-    @patch("hermes_cli.plugins_cmd._save_enabled_set")
-    @patch("hermes_cli.plugins_cmd._get_disabled_set", return_value=set())
-    @patch("hermes_cli.plugins_cmd._get_enabled_set", return_value=set())
+    @patch("kinqhi_cli.plugins.get_bundled_plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._save_disabled_set")
+    @patch("kinqhi_cli.plugins_cmd._save_enabled_set")
+    @patch("kinqhi_cli.plugins_cmd._get_disabled_set", return_value=set())
+    @patch("kinqhi_cli.plugins_cmd._get_enabled_set", return_value=set())
     def test_enable_full_key_writes_key(
         self, mock_en, mock_dis, mock_save_en, mock_save_dis,
         mock_user, mock_bundled, nested_plugin_env,
     ):
-        from hermes_cli.plugins_cmd import cmd_enable
+        from kinqhi_cli.plugins_cmd import cmd_enable
         mock_user.return_value = nested_plugin_env
         mock_bundled.return_value = nested_plugin_env / "nonexistent"
 
@@ -140,17 +140,17 @@ class TestEnableDisableNested:
         saved = mock_save_en.call_args[0][0]
         assert "observability/nemo_relay" in saved
 
-    @patch("hermes_cli.plugins.get_bundled_plugins_dir")
-    @patch("hermes_cli.plugins_cmd._plugins_dir")
-    @patch("hermes_cli.plugins_cmd._save_disabled_set")
-    @patch("hermes_cli.plugins_cmd._save_enabled_set")
-    @patch("hermes_cli.plugins_cmd._get_disabled_set", return_value=set())
-    @patch("hermes_cli.plugins_cmd._get_enabled_set", return_value=set())
+    @patch("kinqhi_cli.plugins.get_bundled_plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._save_disabled_set")
+    @patch("kinqhi_cli.plugins_cmd._save_enabled_set")
+    @patch("kinqhi_cli.plugins_cmd._get_disabled_set", return_value=set())
+    @patch("kinqhi_cli.plugins_cmd._get_enabled_set", return_value=set())
     def test_disable_bare_name_writes_key_and_clears_alias(
         self, mock_en, mock_dis, mock_save_en, mock_save_dis,
         mock_user, mock_bundled, nested_plugin_env,
     ):
-        from hermes_cli.plugins_cmd import cmd_disable
+        from kinqhi_cli.plugins_cmd import cmd_disable
         mock_user.return_value = nested_plugin_env
         mock_bundled.return_value = nested_plugin_env / "nonexistent"
         # Simulate an existing config where the plugin was enabled under the
@@ -164,27 +164,27 @@ class TestEnableDisableNested:
         assert "observability/nemo_relay" in saved_dis
         assert "nemo_relay" not in saved_en  # stale bare alias dropped
 
-    @patch("hermes_cli.plugins.get_bundled_plugins_dir")
-    @patch("hermes_cli.plugins_cmd._plugins_dir")
+    @patch("kinqhi_cli.plugins.get_bundled_plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._plugins_dir")
     def test_enable_unknown_plugin_exits(self, mock_user, mock_bundled, nested_plugin_env):
-        from hermes_cli.plugins_cmd import cmd_enable
+        from kinqhi_cli.plugins_cmd import cmd_enable
         mock_user.return_value = nested_plugin_env
         mock_bundled.return_value = nested_plugin_env / "nonexistent"
         with pytest.raises(SystemExit):
             cmd_enable("does-not-exist")
 
-    @patch("hermes_cli.plugins.get_bundled_plugins_dir")
-    @patch("hermes_cli.plugins_cmd._plugins_dir")
-    @patch("hermes_cli.plugins_cmd._save_disabled_set")
-    @patch("hermes_cli.plugins_cmd._save_enabled_set")
-    @patch("hermes_cli.plugins_cmd._get_disabled_set", return_value=set())
-    @patch("hermes_cli.plugins_cmd._get_enabled_set", return_value=set())
+    @patch("kinqhi_cli.plugins.get_bundled_plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._plugins_dir")
+    @patch("kinqhi_cli.plugins_cmd._save_disabled_set")
+    @patch("kinqhi_cli.plugins_cmd._save_enabled_set")
+    @patch("kinqhi_cli.plugins_cmd._get_disabled_set", return_value=set())
+    @patch("kinqhi_cli.plugins_cmd._get_enabled_set", return_value=set())
     def test_enable_flat_plugin_unchanged(
         self, mock_en, mock_dis, mock_save_en, mock_save_dis,
         mock_user, mock_bundled, nested_plugin_env,
     ):
         """Flat plugins keep writing their bare name (key == name) — no regression."""
-        from hermes_cli.plugins_cmd import cmd_enable
+        from kinqhi_cli.plugins_cmd import cmd_enable
         mock_user.return_value = nested_plugin_env
         mock_bundled.return_value = nested_plugin_env / "nonexistent"
 

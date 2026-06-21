@@ -1,4 +1,4 @@
-"""Relay/connector support package for the Hermes gateway.
+"""Relay/connector support package for the Kinqhi gateway.
 
 EXPERIMENTAL. This package implements the gateway side of the "Gateway Gateway"
 relay design: a generic ``RelayAdapter`` plus the wire-serializable
@@ -58,8 +58,8 @@ def relay_platform_identity() -> tuple[str, str]:
 def relay_connection_auth() -> tuple[Optional[str], Optional[str]]:
     """The (gateway_id, upgrade_secret) this gateway authenticates the WS upgrade with.
 
-    Both come from enrollment (``hermes gateway enroll`` writes them to
-    ``~/.hermes/.env``): ``GATEWAY_RELAY_ID`` identifies the enrolled instance,
+    Both come from enrollment (``kinqhi gateway enroll`` writes them to
+    ``~/.kinqhi/.env``): ``GATEWAY_RELAY_ID`` identifies the enrolled instance,
     ``GATEWAY_RELAY_SECRET`` is the per-gateway signing secret. Either absent ->
     ``(None, None)`` and the transport dials unauthenticated (dev/test, or a
     connector that doesn't enforce auth). Checks env first (Docker), then
@@ -87,7 +87,7 @@ def relay_endpoint() -> Optional[str]:
     verified tenant, so a dishonest gateway can only misdirect its OWN inbound).
     The *source* of the value differs by deployment but the code path is uniform:
     a self-hosted operator sets ``GATEWAY_RELAY_ENDPOINT`` (mirrors how they set
-    ``HERMES_DASHBOARD_PUBLIC_URL``); a hosted/NAS container has the same var
+    ``KINQHI_DASHBOARD_PUBLIC_URL``); a hosted/NAS container has the same var
     stamped in (NAS knows the public URL only in that case). Absent -> the
     gateway provisions outbound-only (no inbound routes written).
 
@@ -214,18 +214,18 @@ def self_provision_relay() -> bool:
     POSTs ``/relay/provision`` asserting its own endpoint + route keys, and sets
     ``GATEWAY_RELAY_ID`` / ``GATEWAY_RELAY_SECRET`` / ``GATEWAY_RELAY_DELIVERY_KEY``
     into ``os.environ`` so the subsequent ``register_relay_adapter()`` picks them
-    up. The creds live ONLY in process memory — never written to ``~/.hermes/.env``.
+    up. The creds live ONLY in process memory — never written to ``~/.kinqhi/.env``.
 
     The trigger is deliberately NOT ``is_managed()``: that means
     "package-manager/NixOS-managed" and is False on a NAS-hosted Fly agent (which
-    sets neither ``HERMES_MANAGED`` nor a ``.managed`` marker), so gating on it
+    sets neither ``KINQHI_MANAGED`` nor a ``.managed`` marker), so gating on it
     blocked the exact hosted case this is for. The real signal is "you pointed me
     at a connector and didn't pin a secret" — which is both NAS-independent and
     self-guarding:
 
       - A NAS-hosted agent: has ``GATEWAY_RELAY_URL``, no pinned secret, and a
         bootstrapped NAS token -> self-provisions.
-      - A self-hosted operator who ran ``hermes gateway enroll``: has a PINNED
+      - A self-hosted operator who ran ``kinqhi gateway enroll``: has a PINNED
         ``GATEWAY_RELAY_SECRET`` -> skipped (the secret-present guard below).
       - A self-hosted box with a relay URL but no NAS identity:
         ``resolve_nous_access_token()`` fails -> graceful no-op.
@@ -257,7 +257,7 @@ def self_provision_relay() -> bool:
         return False
 
     try:
-        from hermes_cli.auth import resolve_nous_access_token
+        from kinqhi_cli.auth import resolve_nous_access_token
 
         access_token = resolve_nous_access_token()
     except Exception as exc:  # noqa: BLE001 - boot must survive a token failure
@@ -274,7 +274,7 @@ def self_provision_relay() -> bool:
         host = socket.gethostname().strip()
     except Exception:  # noqa: BLE001
         host = ""
-    gateway_id = os.environ.get("GATEWAY_RELAY_ID", "").strip() or f"gw-{host or 'hermes'}"
+    gateway_id = os.environ.get("GATEWAY_RELAY_ID", "").strip() or f"gw-{host or 'kinqhi'}"
     endpoint = relay_endpoint()
     route_keys = relay_route_keys()
 

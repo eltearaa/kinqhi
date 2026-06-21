@@ -1,6 +1,6 @@
 """Tests for the OAuth manual-paste fallback for browser-only remotes.
 
-Regression coverage for [#26923](https://github.com/NousResearch/hermes-agent/issues/26923):
+Regression coverage for [#26923](https://github.com/NousResearch/kinqhi/issues/26923):
 GCP Cloud Shell, GitHub Codespaces, AWS EC2 Instance Connect and
 other browser-only remote consoles can't reach the
 ``http://127.0.0.1:56121/callback`` loopback listener bound on the
@@ -29,7 +29,7 @@ import contextlib
 
 import pytest
 
-from hermes_cli import auth as auth_mod
+from kinqhi_cli import auth as auth_mod
 
 
 # ---------------------------------------------------------------------------
@@ -256,8 +256,8 @@ def test_xai_loopback_login_manual_paste_skips_http_server(monkeypatch):
     captured_state: dict = {}
 
     def _fake_prompt(_redirect_uri):
-        # Hermes generates state internally; we won't know it ahead of
-        # time, so capture the state Hermes baked into the authorize
+        # Kinqhi generates state internally; we won't know it ahead of
+        # time, so capture the state Kinqhi baked into the authorize
         # URL via a sneak peek on ``_xai_oauth_build_authorize_url``.
         return {
             "code": "fake-auth-code",
@@ -559,7 +559,7 @@ def test_xai_loopback_login_timeout_falls_back_to_manual_paste(monkeypatch):
 
 
 def test_xai_wait_for_callback_accepts_ready_stdin_code(monkeypatch):
-    """Users can paste the Grok Build code while Hermes is still waiting."""
+    """Users can paste the Grok Build code while Kinqhi is still waiting."""
     class _StubServer:
         shutdown_called = False
         close_called = False

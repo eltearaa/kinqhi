@@ -33,8 +33,8 @@ def test_dockerfile_makes_opt_hermes_root_owned_and_non_writable() -> None:
 def test_dockerfile_keeps_mutable_state_under_opt_data() -> None:
     text = _dockerfile_text()
 
-    assert "ENV HERMES_HOME=/opt/data" in text
-    assert "ENV HERMES_WRITE_SAFE_ROOT=/opt/data" in text
+    assert "ENV KINQHI_HOME=/opt/data" in text
+    assert "ENV KINQHI_WRITE_SAFE_ROOT=/opt/data" in text
     assert 'VOLUME [ "/opt/data" ]' in text
 
 
@@ -42,8 +42,8 @@ def test_dockerfile_disables_runtime_install_mutations() -> None:
     text = _dockerfile_text()
 
     assert "ENV PYTHONDONTWRITEBYTECODE=1" in text
-    assert "ENV HERMES_DISABLE_LAZY_INSTALLS=1" in text
-    assert "HERMES_TUI_DIR=/opt/hermes/ui-tui" in text
+    assert "ENV KINQHI_DISABLE_LAZY_INSTALLS=1" in text
+    assert "KINQHI_TUI_DIR=/opt/hermes/ui-tui" in text
 
 
 def test_dockerfile_does_not_chown_install_trees_to_hermes() -> None:
@@ -67,7 +67,7 @@ def test_dockerfile_bakes_code_scoped_install_method_stamp() -> None:
     detect_install_method() reads the code-scoped stamp
     (/opt/hermes/.install_method) first; baking it at build time keeps the
     published image self-identifying as 'docker' WITHOUT writing into the
-    shared $HERMES_HOME data volume (which a host install may also use).
+    shared $KINQHI_HOME data volume (which a host install may also use).
     It must live inside the immutable block so the runtime user can't alter it.
     """
     text = _dockerfile_text()

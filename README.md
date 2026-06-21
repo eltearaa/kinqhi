@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/banner.png" alt="Hermes Agent" width="100%">
+  <img src="assets/banner.png" alt="Kinqhi" width="100%">
 </p>
 
-# Hermes Agent (Lean)
+# Kinqhi (Lean)
 
 **Personal AI agent — lean distribution.** Stripped of 50%+ of upstream. Core agent runs across CLI, TUI, Discord, API server, and Zed (ACP). 6 model providers, holographic memory (local SQLite), curated skills.
 
@@ -29,22 +29,22 @@ source .venv/bin/activate
 uv pip install -e ".[dev,cli,pty,mcp,acp]"
 
 # Configure
-mkdir -p ~/.hermes
-cp .env.example ~/.hermes/.env
-cp cli-config.yaml.example ~/.hermes/config.yaml
+mkdir -p ~/.kinqhi
+cp .env.example ~/.kinqhi/.env
+cp cli-config.yaml.example ~/.kinqhi/config.yaml
 
-# Add your API key to ~/.hermes/.env
+# Add your API key to ~/.kinqhi/.env
 #   DEEPSEEK_API_KEY=sk-...
 #   or OPENROUTER_API_KEY=sk-...
 
 # Run
-hermes              # interactive CLI
-hermes --tui        # terminal UI
-hermes gateway      # start gateway (Discord + API server on localhost:8642)
-hermes-acp          # start ACP server for Zed integration
+kinqhi              # interactive CLI
+kinqhi --tui        # terminal UI
+kinqhi gateway      # start gateway (Discord + API server on localhost:8642)
+kinqhi-acp          # start ACP server for Zed integration
 ```
 
-**For Discord:** add `DISCORD_BOT_TOKEN=...` to `.env`, then `hermes gateway`.
+**For Discord:** add `DISCORD_BOT_TOKEN=...` to `.env`, then `kinqhi gateway`.
 
 **For browser:** install `agent-browser` + Chromium:
 ```bash
@@ -53,10 +53,10 @@ npx agent-browser install --with-deps
 
 **For computer use (macOS):** install `cua-driver`:
 ```bash
-hermes computer-use install
+kinqhi computer-use install
 ```
 
-State lives at `~/.hermes/` — sessions, memory (SQLite), skills, config. Profile-aware.
+State lives at `~/.kinqhi/` — sessions, memory (SQLite), skills, config. Profile-aware.
 
 ---
 
@@ -71,27 +71,27 @@ State lives at `~/.hermes/` — sessions, memory (SQLite), skills, config. Profi
 | **Custom** | Your own endpoint. Any URL + key. |
 | **Ollama** | Local models. Free, offline-capable. |
 
-Switch with `/model <provider:model>` or `hermes model`.
+Switch with `/model <provider:model>` or `kinqhi model`.
 
 ---
 
 ## CLI Reference
 
 ```
-hermes              # Interactive CLI
-hermes --tui        # Terminal UI
-hermes model        # Choose provider and model
-hermes tools        # Configure enabled tools
-hermes gateway      # Start gateway (Discord + API)
-hermes cron         # Manage scheduled jobs
-hermes kanban       # Multi-agent work queue
-hermes skills       # Browse and install skills
-hermes doctor       # Diagnose issues
+kinqhi              # Interactive CLI
+kinqhi --tui        # Terminal UI
+kinqhi model        # Choose provider and model
+kinqhi tools        # Configure enabled tools
+kinqhi gateway      # Start gateway (Discord + API)
+kinqhi cron         # Manage scheduled jobs
+kinqhi kanban       # Multi-agent work queue
+kinqhi skills       # Browse and install skills
+kinqhi doctor       # Diagnose issues
 ```
 
 | Action | CLI | Messaging |
 |--------|-----|-----------|
-| Start | `hermes` | `hermes gateway`, then DM the bot |
+| Start | `kinqhi` | `kinqhi gateway`, then DM the bot |
 | New session | `/new` or `/reset` | `/new` or `/reset` |
 | Change model | `/model` | `/model` |
 | Retry/undo | `/retry`, `/undo` | `/retry`, `/undo` |

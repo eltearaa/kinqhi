@@ -76,9 +76,9 @@ class TestIsWriteDenied:
     )
     def test_oauth_mcp_tokens_and_pairing_denied(self, path):
         """PKCE creds, mcp-tokens, and pairing entries must be write-denied."""
-        from hermes_constants import get_hermes_home
-        hermes_home = get_hermes_home()
-        full_path = str(hermes_home / path)
+        from kinqhi_constants import get_kinqhi_home
+        kinqhi_home = get_kinqhi_home()
+        full_path = str(kinqhi_home / path)
         assert _is_write_denied(full_path) is True
 
     @pytest.mark.parametrize(
@@ -86,9 +86,9 @@ class TestIsWriteDenied:
         ["auth.json", "config.yaml", "webhook_subscriptions.json"],
     )
     def test_hermes_control_files_requested_writable(self, path):
-        from hermes_constants import get_hermes_home
+        from kinqhi_constants import get_kinqhi_home
 
-        assert _is_write_denied(str(get_hermes_home() / path)) is False
+        assert _is_write_denied(str(get_kinqhi_home() / path)) is False
 
     @pytest.mark.parametrize(
         "path",
@@ -98,9 +98,9 @@ class TestIsWriteDenied:
     )
     def test_oauth_traversal_denied(self, path):
         """Path traversal attempts to protected OAuth files must be blocked."""
-        from hermes_constants import get_hermes_home
-        hermes_home = get_hermes_home()
-        full_path = str(hermes_home / path)
+        from kinqhi_constants import get_kinqhi_home
+        kinqhi_home = get_kinqhi_home()
+        full_path = str(kinqhi_home / path)
         assert _is_write_denied(full_path) is True
 
     @pytest.mark.parametrize(
@@ -121,7 +121,7 @@ class TestIsWriteDenied:
         root = tmp_path / "hermes"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(profile))
+        monkeypatch.setenv("KINQHI_HOME", str(profile))
 
         assert _is_write_denied(str(profile / name)) is True
         assert _is_write_denied(str(root / name)) is True
@@ -134,7 +134,7 @@ class TestIsWriteDenied:
         root = tmp_path / "hermes"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(profile))
+        monkeypatch.setenv("KINQHI_HOME", str(profile))
 
         assert _is_write_denied(str(profile / name)) is False
         assert _is_write_denied(str(root / name)) is False
@@ -144,7 +144,7 @@ class TestIsWriteDenied:
         root = tmp_path / "hermes"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(profile))
+        monkeypatch.setenv("KINQHI_HOME", str(profile))
 
         assert _is_write_denied(str(profile / "mcp-tokens" / "tok.json")) is True
         assert _is_write_denied(str(root / "mcp-tokens" / "tok.json")) is True
@@ -154,7 +154,7 @@ class TestIsWriteDenied:
     def test_pairing_dir_denied(self, tmp_path, monkeypatch):
         """Regression: pairing/ must be write-denied under both profile and root.
 
-        PR #30383 introduced ~/.hermes/pairing/{platform}-approved.json as the
+        PR #30383 introduced ~/.kinqhi/pairing/{platform}-approved.json as the
         gateway access-control list. Without this block, a prompt-injected agent
         can write arbitrary user IDs into an approved file, granting persistent
         gateway access without going through the pairing code flow — the same
@@ -163,7 +163,7 @@ class TestIsWriteDenied:
         root = tmp_path / "hermes"
         profile = root / "profiles" / "coder"
         profile.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(profile))
+        monkeypatch.setenv("KINQHI_HOME", str(profile))
 
         # Active profile pairing entries
         assert _is_write_denied(str(profile / "pairing" / "telegram-approved.json")) is True
@@ -527,10 +527,10 @@ class TestShellFileOpsHelpers:
 
     def test_read_file_strips_leaked_terminal_fence_markers(self, mock_env):
         leaked = (
-            "'\x07__HERMES_FENCE_a9f7b3__\x1b]0;cat "
+            "'\x07__KINQHI_FENCE_a9f7b3__\x1b]0;cat "
             "'/tmp/test/a.py' 2> /dev/null\x07\n"
             "print('ok')\n"
-            "__HERMES_FENCE_a9f7b3__\x07'\n"
+            "__KINQHI_FENCE_a9f7b3__\x07'\n"
         )
 
         def side_effect(command, **kwargs):
@@ -549,16 +549,16 @@ class TestShellFileOpsHelpers:
         result = ops.read_file("/tmp/test/a.py")
 
         assert result.error is None
-        assert "HERMES_FENCE" not in result.content
+        assert "KINQHI_FENCE" not in result.content
         assert "\x1b]" not in result.content
         assert "\x07" not in result.content
         assert "1|print('ok')" in result.content
 
     def test_read_file_raw_strips_leaked_terminal_fence_markers(self, mock_env):
         leaked = (
-            "__HERMES_FENCE_a9f7b3__\x07'\n"
+            "__KINQHI_FENCE_a9f7b3__\x07'\n"
             "alpha\n"
-            "\x1b]0;cat '/tmp/test/a.txt'\x07__HERMES_FENCE_a9f7b3__\n"
+            "\x1b]0;cat '/tmp/test/a.txt'\x07__KINQHI_FENCE_a9f7b3__\n"
         )
 
         def side_effect(command, **kwargs):

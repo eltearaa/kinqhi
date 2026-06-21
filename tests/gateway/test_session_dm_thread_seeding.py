@@ -25,12 +25,12 @@ def store(tmp_path, monkeypatch):
     """SessionStore with SQLite — load_transcript reads from DB only.
 
     Pin DEFAULT_DB_PATH to tmp_path so SessionDB() can't write to the real
-    ~/.hermes/state.db. (DEFAULT_DB_PATH is a module-level constant computed
-    at hermes_state import time, before pytest's HERMES_HOME monkeypatch
-    fires — the autouse fixture's HERMES_HOME override doesn't help here.)
+    ~/.kinqhi/state.db. (DEFAULT_DB_PATH is a module-level constant computed
+    at kinqhi_state import time, before pytest's KINQHI_HOME monkeypatch
+    fires — the autouse fixture's KINQHI_HOME override doesn't help here.)
     """
-    import hermes_state
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", tmp_path / "state.db")
+    import kinqhi_state
+    monkeypatch.setattr(kinqhi_state, "DEFAULT_DB_PATH", tmp_path / "state.db")
     config = GatewayConfig()
     s = SessionStore(sessions_dir=tmp_path, config=config)
     return s

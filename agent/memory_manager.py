@@ -364,9 +364,9 @@ class MemoryManager:
         # (#40466). Reject it here, at the door, so it never enters the routing
         # table at all — matching the built-ins-always-win invariant used by
         # the TTS/browser/search provider registries.
-        from toolsets import _HERMES_CORE_TOOLS
+        from toolsets import _KINQHI_CORE_TOOLS
 
-        _core_tool_names = set(_HERMES_CORE_TOOLS)
+        _core_tool_names = set(_KINQHI_CORE_TOOLS)
 
         # Index tool names → provider for routing
         for schema in provider.get_tool_schemas():
@@ -435,7 +435,7 @@ class MemoryManager:
     def _strip_skill_scaffolding(text: str) -> Optional[str]:
         """Return memory-worthy user text, or None to skip the turn.
 
-        When a user invokes a /skill or /bundle, Hermes expands the turn into
+        When a user invokes a /skill or /bundle, Kinqhi expands the turn into
         a model-facing message that embeds the entire skill body. Feeding that
         verbatim to memory providers pollutes their stores/embeddings with
         prompt scaffolding instead of what the user actually asked. We recover
@@ -650,9 +650,9 @@ class MemoryManager:
         :meth:`add_provider`, so the manager must not advertise a schema it
         will never route. Built-ins always win (#40466).
         """
-        from toolsets import _HERMES_CORE_TOOLS
+        from toolsets import _KINQHI_CORE_TOOLS
 
-        _core_tool_names = set(_HERMES_CORE_TOOLS)
+        _core_tool_names = set(_KINQHI_CORE_TOOLS)
         schemas = []
         seen = set()
         for provider in self._providers:
@@ -932,13 +932,13 @@ class MemoryManager:
     def initialize_all(self, session_id: str, **kwargs) -> None:
         """Initialize all providers.
 
-        Automatically injects ``hermes_home`` into *kwargs* so that every
+        Automatically injects ``kinqhi_home`` into *kwargs* so that every
         provider can resolve profile-scoped storage paths without importing
-        ``get_hermes_home()`` themselves.
+        ``get_kinqhi_home()`` themselves.
         """
-        if "hermes_home" not in kwargs:
-            from hermes_constants import get_hermes_home
-            kwargs["hermes_home"] = str(get_hermes_home())
+        if "kinqhi_home" not in kwargs:
+            from kinqhi_constants import get_kinqhi_home
+            kwargs["kinqhi_home"] = str(get_kinqhi_home())
         for provider in self._providers:
             try:
                 provider.initialize(session_id=session_id, **kwargs)

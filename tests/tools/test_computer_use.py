@@ -22,7 +22,7 @@ def _reset_backend():
     from tools.computer_use.tool import reset_backend_for_tests
     reset_backend_for_tests()
     # Force the noop backend.
-    with patch.dict(os.environ, {"HERMES_COMPUTER_USE_BACKEND": "noop"}, clear=False):
+    with patch.dict(os.environ, {"KINQHI_COMPUTER_USE_BACKEND": "noop"}, clear=False):
         yield
     reset_backend_for_tests()
 
@@ -1458,7 +1458,7 @@ class TestCuaEnvironmentScrubbing:
     def test_cua_session_sanitizes_provider_env_vars(self):
         """_CuaDriverSession._aenter() must sanitize sensitive env vars.
 
-        The cua-driver MCP subprocess should not inherit Hermes-managed credentials
+        The cua-driver MCP subprocess should not inherit Kinqhi-managed credentials
         or other sensitive environment variables — only runtime-required vars.
         This is a regression test for issue #37878.
         """

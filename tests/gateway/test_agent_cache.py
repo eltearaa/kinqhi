@@ -81,7 +81,7 @@ class TestAgentConfigSignature:
 
         runtime = {"api_key": "sk-test12345678", "base_url": "https://openrouter.ai/api/v1", "provider": "openrouter"}
         sig1 = GatewayRunner._agent_config_signature("claude-sonnet-4", runtime, ["hermes-telegram"], "")
-        sig2 = GatewayRunner._agent_config_signature("claude-sonnet-4", runtime, ["hermes-discord"], "")
+        sig2 = GatewayRunner._agent_config_signature("claude-sonnet-4", runtime, ["kinqhi-discord"], "")
         assert sig1 != sig2
 
     def test_reasoning_not_in_signature(self):
@@ -1599,7 +1599,7 @@ class TestAgentCacheMessageCountRebaseline:
         writes), turn appends its own rows, then the post-turn re-baseline
         runs — so the NEXT turn's guard sees no external change and reuses.
         """
-        from hermes_state import SessionDB
+        from kinqhi_state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "sessions.db")
         db.create_session("s1", source="telegram")
@@ -1634,7 +1634,7 @@ class TestAgentCacheMessageCountRebaseline:
         """After the re-baseline, a DIFFERENT process appending to the same
         session must still flip the guard to rebuild (the #45966 fix holds).
         """
-        from hermes_state import SessionDB
+        from kinqhi_state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "sessions.db")
         db.create_session("s1", source="telegram")
@@ -1663,7 +1663,7 @@ class TestAgentCacheMessageCountRebaseline:
     def test_rebaseline_is_fail_safe_and_skips_legacy_and_pending(self, tmp_path):
         """Re-baseline must never crash and must leave legacy 2-tuples and
         pending-sentinel entries untouched."""
-        from hermes_state import SessionDB
+        from kinqhi_state import SessionDB
         from gateway.run import _AGENT_PENDING_SENTINEL
 
         db = SessionDB(db_path=tmp_path / "sessions.db")

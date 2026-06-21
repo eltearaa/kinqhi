@@ -1,12 +1,12 @@
 """Derive ACP session-provenance metadata from the existing compression chain.
 
-This is an additive Hermes extension surfaced under ACP ``_meta.hermes`` so
+This is an additive Kinqhi extension surfaced under ACP ``_meta.kinqhi`` so
 existing ACP clients ignore it. It carries no new persisted state: everything
 is derived on demand from the ``sessions`` table (``parent_session_id`` /
 ``end_reason``), which already models compression-continuation chains.
 
 The ACP/editor ``session_id`` stays the stable public handle. When context
-compression rotates the internal Hermes head, ``build_session_provenance`` lets
+compression rotates the internal Kinqhi head, ``build_session_provenance`` lets
 a client see the previous/current internal ids and the lineage root without
 parsing status text, guessing from token drops, or reading ``state.db``.
 """
@@ -26,18 +26,18 @@ def build_session_provenance(
     *,
     previous_hermes_session_id: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Build ``_meta.hermes.sessionProvenance`` for an ACP session.
+    """Build ``_meta.kinqhi.sessionProvenance`` for an ACP session.
 
     Args:
         db: A ``SessionDB`` (must expose ``get_session``).
         acp_session_id: The stable ACP/editor-facing session handle.
-        current_hermes_session_id: The live internal Hermes DB session id
+        current_hermes_session_id: The live internal Kinqhi DB session id
             (``state.agent.session_id``).
         previous_hermes_session_id: The internal id from before the most recent
             turn, when known. Supplied by ``prompt()`` to flag a rotation.
 
     Returns:
-        A dict suitable for ``{"hermes": {"sessionProvenance": <dict>}}`` under
+        A dict suitable for ``{"kinqhi": {"sessionProvenance": <dict>}}`` under
         ACP ``_meta``, or ``None`` if the session can't be read.
     """
     try:
@@ -91,14 +91,14 @@ def build_session_provenance(
 
     provenance: Dict[str, Any] = {
         "acpSessionId": acp_session_id,
-        "currentHermesSessionId": current_hermes_session_id,
-        "rootHermesSessionId": root_id,
-        "parentHermesSessionId": parent_id,
+        "currentKinqhiSessionId": current_hermes_session_id,
+        "rootKinqhiSessionId": root_id,
+        "parentKinqhiSessionId": parent_id,
         "sessionKind": "continuation" if is_continuation else "root",
         "compressionDepth": compression_depth,
     }
     if previous_hermes_session_id:
-        provenance["previousHermesSessionId"] = previous_hermes_session_id
+        provenance["previousKinqhiSessionId"] = previous_hermes_session_id
     if rotated:
         # The head moved during the last turn. The only mechanism that rotates
         # the internal id mid-turn is compression-driven session splitting.
@@ -115,7 +115,7 @@ def session_provenance_meta(
     *,
     previous_hermes_session_id: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Return a ready ``_meta`` payload: ``{"hermes": {"sessionProvenance": ...}}``."""
+    """Return a ready ``_meta`` payload: ``{"kinqhi": {"sessionProvenance": ...}}``."""
     prov = build_session_provenance(
         db,
         acp_session_id,
@@ -124,4 +124,4 @@ def session_provenance_meta(
     )
     if prov is None:
         return None
-    return {"hermes": {"sessionProvenance": prov}}
+    return {"kinqhi": {"sessionProvenance": prov}}

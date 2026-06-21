@@ -10,7 +10,7 @@ make container-written files match the host user. Under s6-overlay this can't
 work — the bootstrap (UID remap, volume/build-tree chown, config seeding) needs
 root, and the baked image dirs are owned by the hermes build UID, so an
 arbitrary pinned UID can't write them (EACCES on a bind mount, hard crash on a
-named volume). The supported path is root start + HERMES_UID/HERMES_GID (or the
+named volume). The supported path is root start + KINQHI_UID/KINQHI_GID (or the
 PUID/PGID aliases), which remaps the hermes user and chowns the volume.
 
 The guard fires only when the current UID is neither root NOR the hermes UID,
@@ -60,7 +60,7 @@ def test_guard_present_and_mentions_remediation(path: Path) -> None:
     assert '"$cur_uid" != "$(id -u hermes)"' in block
     assert "exit 1" in block
     # Must point users at the supported env vars.
-    assert "HERMES_UID" in block and "HERMES_GID" in block
+    assert "KINQHI_UID" in block and "KINQHI_GID" in block
     assert "PUID" in block and "PGID" in block
 
 
@@ -111,7 +111,7 @@ def test_user_pinned_to_hermes_uid_passes() -> None:
 
 
 def test_user_pinned_to_remapped_hermes_uid_passes() -> None:
-    """After a HERMES_UID remap the hermes UID is e.g. 4242; a container pinned
+    """After a KINQHI_UID remap the hermes UID is e.g. 4242; a container pinned
     to that same UID must still pass (cur_uid == hermes_uid)."""
     for text in (_read(STAGE2_HOOK), _read(MAIN_WRAPPER)):
         proc = _run_guard(text, cur_uid=4242, hermes_uid=4242)

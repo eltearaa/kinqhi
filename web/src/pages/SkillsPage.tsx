@@ -988,7 +988,7 @@ function HubBrowser({
                   Featured skills
                 </span>
                 <span className="text-xs text-text-tertiary">
-                  from the Hermes index — search above for thousands more
+                  from the Kinqhi index — search above for thousands more
                 </span>
               </div>
               {featured.map((r) => (
@@ -1079,7 +1079,7 @@ function ConnectedHubs({
     return (
       <p className="text-xs text-muted-foreground">
         Results come from the same sources as{" "}
-        <span className="font-mono">hermes skills search</span>.
+        <span className="font-mono">kinqhi skills search</span>.
       </p>
     );
   }

@@ -2,16 +2,16 @@
 
 Ported from openai/codex#18646 (`feat: add --ignore-user-config and --ignore-rules`).
 Codex's flags fully isolate a run from user-level config and exec-policy .rules
-files. In Hermes the equivalent isolation is:
+files. In Kinqhi the equivalent isolation is:
 
-* ``--ignore-user-config`` → skip ``~/.hermes/config.yaml`` in ``load_cli_config()``
+* ``--ignore-user-config`` → skip ``~/.kinqhi/config.yaml`` in ``load_cli_config()``
   (credentials in ``.env`` are still loaded).
 * ``--ignore-rules`` → skip AGENTS.md / SOUL.md / .cursorrules auto-injection
   and persistent memory (maps to ``AIAgent(skip_context_files=True,
   skip_memory=True)``).
 
 Both flags are wired via env vars so they work cleanly across the
-argparse → cmd_chat → cli.main() → HermesCLI → AIAgent call chain.
+argparse → cmd_chat → cli.main() → KinqhiCLI → AIAgent call chain.
 """
 
 from __future__ import annotations
@@ -32,17 +32,17 @@ def _clean_env(monkeypatch):
     those writes aren't tracked by monkeypatch and won't be undone by it.
     We add explicit cleanup on yield to prevent cross-test pollution.
     """
-    for var in ("HERMES_IGNORE_USER_CONFIG", "HERMES_IGNORE_RULES"):
+    for var in ("KINQHI_IGNORE_USER_CONFIG", "KINQHI_IGNORE_RULES"):
         monkeypatch.delenv(var, raising=False)
     yield
-    for var in ("HERMES_IGNORE_USER_CONFIG", "HERMES_IGNORE_RULES"):
+    for var in ("KINQHI_IGNORE_USER_CONFIG", "KINQHI_IGNORE_RULES"):
         os.environ.pop(var, None)
 
 
 class TestIgnoreUserConfigEnvGate:
-    """``load_cli_config()`` must honour ``HERMES_IGNORE_USER_CONFIG=1``.
+    """``load_cli_config()`` must honour ``KINQHI_IGNORE_USER_CONFIG=1``.
 
-    When the env var is set, user config at ``<hermes_home>/config.yaml`` is
+    When the env var is set, user config at ``<kinqhi_home>/config.yaml`` is
     skipped even if present — the function returns only the built-in defaults
     (merged with the project-level ``cli-config.yaml`` fallback).
     """
@@ -60,9 +60,9 @@ class TestIgnoreUserConfigEnvGate:
         (tmp_path / "config.yaml").write_text(config_yaml)
 
     def _reload_cli(self, monkeypatch, tmp_path):
-        """Point cli._hermes_home at tmp_path and return a fresh load_cli_config."""
+        """Point cli._kinqhi_home at tmp_path and return a fresh load_cli_config."""
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", tmp_path)
+        monkeypatch.setattr(cli, "_kinqhi_home", tmp_path)
         return cli.load_cli_config
 
     def test_user_config_loaded_when_flag_unset(self, tmp_path, monkeypatch):
@@ -76,13 +76,13 @@ class TestIgnoreUserConfigEnvGate:
         assert cfg["agent"]["system_prompt"] == "from user config"
 
     def test_user_config_skipped_when_flag_set(self, tmp_path, monkeypatch):
-        """With HERMES_IGNORE_USER_CONFIG=1, user config.yaml is ignored.
+        """With KINQHI_IGNORE_USER_CONFIG=1, user config.yaml is ignored.
 
         The built-in default ``model.default`` is empty string (no user override),
         and the user's ``agent.system_prompt`` is not seen.
         """
         self._write_user_config(tmp_path, "anthropic/claude-sonnet-4.6")
-        monkeypatch.setenv("HERMES_IGNORE_USER_CONFIG", "1")
+        monkeypatch.setenv("KINQHI_IGNORE_USER_CONFIG", "1")
 
         load_cli_config = self._reload_cli(monkeypatch, tmp_path)
         cfg = load_cli_config()
@@ -98,7 +98,7 @@ class TestIgnoreUserConfigEnvGate:
     def test_flag_ignored_when_set_to_other_value(self, tmp_path, monkeypatch):
         """Only the literal value "1" activates the bypass, matching the yolo pattern."""
         self._write_user_config(tmp_path, "anthropic/claude-sonnet-4.6")
-        monkeypatch.setenv("HERMES_IGNORE_USER_CONFIG", "true")  # not "1"
+        monkeypatch.setenv("KINQHI_IGNORE_USER_CONFIG", "true")  # not "1"
 
         load_cli_config = self._reload_cli(monkeypatch, tmp_path)
         cfg = load_cli_config()
@@ -108,50 +108,50 @@ class TestIgnoreUserConfigEnvGate:
 
 
 class TestIgnoreRulesEnvGate:
-    """The constructor / env var must propagate to ``HermesCLI.ignore_rules``
+    """The constructor / env var must propagate to ``KinqhiCLI.ignore_rules``
     so ``AIAgent`` is built with ``skip_context_files=True`` and
     ``skip_memory=True``.
     """
 
     def test_env_var_enables_ignore_rules(self, monkeypatch):
-        """Setting HERMES_IGNORE_RULES=1 flips HermesCLI.ignore_rules True."""
-        monkeypatch.setenv("HERMES_IGNORE_RULES", "1")
+        """Setting KINQHI_IGNORE_RULES=1 flips KinqhiCLI.ignore_rules True."""
+        monkeypatch.setenv("KINQHI_IGNORE_RULES", "1")
 
-        # Import HermesCLI lazily — cli.py has heavy module-init side effects
+        # Import KinqhiCLI lazily — cli.py has heavy module-init side effects
         # that we don't want to run at test collection time.
         import cli
         importlib.reload(cli)
 
-        # Build only enough of HermesCLI to reach the ignore_rules assignment.
+        # Build only enough of KinqhiCLI to reach the ignore_rules assignment.
         # The full __init__ pulls in provider/auth/session DB, so we cheat:
         # create the object via object.__new__ and manually run the assignment
         # the same way the real constructor does.
-        obj = object.__new__(cli.HermesCLI)
-        # Replicate the exact logic from cli.py HermesCLI.__init__:
+        obj = object.__new__(cli.KinqhiCLI)
+        # Replicate the exact logic from cli.py KinqhiCLI.__init__:
         ignore_rules = False  # constructor default
-        obj.ignore_rules = ignore_rules or os.environ.get("HERMES_IGNORE_RULES") == "1"
+        obj.ignore_rules = ignore_rules or os.environ.get("KINQHI_IGNORE_RULES") == "1"
 
         assert obj.ignore_rules is True
 
     def test_constructor_flag_alone_enables_ignore_rules(self, monkeypatch):
-        monkeypatch.delenv("HERMES_IGNORE_RULES", raising=False)
+        monkeypatch.delenv("KINQHI_IGNORE_RULES", raising=False)
         import cli
-        obj = object.__new__(cli.HermesCLI)
+        obj = object.__new__(cli.KinqhiCLI)
         ignore_rules = True  # constructor argument
-        obj.ignore_rules = ignore_rules or os.environ.get("HERMES_IGNORE_RULES") == "1"
+        obj.ignore_rules = ignore_rules or os.environ.get("KINQHI_IGNORE_RULES") == "1"
         assert obj.ignore_rules is True
 
     def test_neither_flag_nor_env_leaves_rules_enabled(self, monkeypatch):
-        monkeypatch.delenv("HERMES_IGNORE_RULES", raising=False)
+        monkeypatch.delenv("KINQHI_IGNORE_RULES", raising=False)
         import cli
-        obj = object.__new__(cli.HermesCLI)
+        obj = object.__new__(cli.KinqhiCLI)
         ignore_rules = False
-        obj.ignore_rules = ignore_rules or os.environ.get("HERMES_IGNORE_RULES") == "1"
+        obj.ignore_rules = ignore_rules or os.environ.get("KINQHI_IGNORE_RULES") == "1"
         assert obj.ignore_rules is False
 
 
 class TestCmdChatWiring:
-    """The wiring inside ``cmd_chat()`` in ``hermes_cli/main.py`` must set
+    """The wiring inside ``cmd_chat()`` in ``kinqhi_cli/main.py`` must set
     both env vars before importing ``cli`` (which evaluates
     ``load_cli_config()`` at module import).
     """
@@ -159,13 +159,13 @@ class TestCmdChatWiring:
     def _simulate_cmd_chat_env_setup(self, args):
         """Replicate the exact snippet from cmd_chat in main.py."""
         if getattr(args, "ignore_user_config", False):
-            os.environ["HERMES_IGNORE_USER_CONFIG"] = "1"
+            os.environ["KINQHI_IGNORE_USER_CONFIG"] = "1"
         if getattr(args, "ignore_rules", False):
-            os.environ["HERMES_IGNORE_RULES"] = "1"
+            os.environ["KINQHI_IGNORE_RULES"] = "1"
 
     def test_both_flags_set_both_env_vars(self, monkeypatch):
-        monkeypatch.delenv("HERMES_IGNORE_USER_CONFIG", raising=False)
-        monkeypatch.delenv("HERMES_IGNORE_RULES", raising=False)
+        monkeypatch.delenv("KINQHI_IGNORE_USER_CONFIG", raising=False)
+        monkeypatch.delenv("KINQHI_IGNORE_RULES", raising=False)
 
         class FakeArgs:
             ignore_user_config = True
@@ -173,12 +173,12 @@ class TestCmdChatWiring:
 
         self._simulate_cmd_chat_env_setup(FakeArgs())
 
-        assert os.environ.get("HERMES_IGNORE_USER_CONFIG") == "1"
-        assert os.environ.get("HERMES_IGNORE_RULES") == "1"
+        assert os.environ.get("KINQHI_IGNORE_USER_CONFIG") == "1"
+        assert os.environ.get("KINQHI_IGNORE_RULES") == "1"
 
     def test_only_ignore_user_config(self, monkeypatch):
-        monkeypatch.delenv("HERMES_IGNORE_USER_CONFIG", raising=False)
-        monkeypatch.delenv("HERMES_IGNORE_RULES", raising=False)
+        monkeypatch.delenv("KINQHI_IGNORE_USER_CONFIG", raising=False)
+        monkeypatch.delenv("KINQHI_IGNORE_RULES", raising=False)
 
         class FakeArgs:
             ignore_user_config = True
@@ -186,20 +186,20 @@ class TestCmdChatWiring:
 
         self._simulate_cmd_chat_env_setup(FakeArgs())
 
-        assert os.environ.get("HERMES_IGNORE_USER_CONFIG") == "1"
-        assert "HERMES_IGNORE_RULES" not in os.environ
+        assert os.environ.get("KINQHI_IGNORE_USER_CONFIG") == "1"
+        assert "KINQHI_IGNORE_RULES" not in os.environ
 
     def test_flags_absent_sets_nothing(self, monkeypatch):
-        monkeypatch.delenv("HERMES_IGNORE_USER_CONFIG", raising=False)
-        monkeypatch.delenv("HERMES_IGNORE_RULES", raising=False)
+        monkeypatch.delenv("KINQHI_IGNORE_USER_CONFIG", raising=False)
+        monkeypatch.delenv("KINQHI_IGNORE_RULES", raising=False)
 
         class FakeArgs:
             pass  # no attributes at all — getattr fallback must handle
 
         self._simulate_cmd_chat_env_setup(FakeArgs())
 
-        assert "HERMES_IGNORE_USER_CONFIG" not in os.environ
-        assert "HERMES_IGNORE_RULES" not in os.environ
+        assert "KINQHI_IGNORE_USER_CONFIG" not in os.environ
+        assert "KINQHI_IGNORE_RULES" not in os.environ
 
 
 class TestArgparseFlagsRegistered:
@@ -225,7 +225,7 @@ class TestArgparseFlagsRegistered:
 
     def test_main_py_registers_both_flags(self):
         """E2E: the real hermes parser accepts both flags."""
-        from hermes_cli._parser import build_top_level_parser
+        from kinqhi_cli._parser import build_top_level_parser
 
         parser, _subparsers, chat_parser = build_top_level_parser()
 
@@ -238,7 +238,7 @@ class TestArgparseFlagsRegistered:
 
         # And the cmd_chat env-var wiring must be present
         import inspect
-        import hermes_cli.main as hm
+        import kinqhi_cli.main as hm
         src = inspect.getsource(hm)
-        assert "HERMES_IGNORE_USER_CONFIG" in src
-        assert "HERMES_IGNORE_RULES" in src
+        assert "KINQHI_IGNORE_USER_CONFIG" in src
+        assert "KINQHI_IGNORE_RULES" in src

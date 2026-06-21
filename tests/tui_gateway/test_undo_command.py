@@ -20,25 +20,25 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_state import SessionDB
+from kinqhi_state import SessionDB
 
 
 @pytest.fixture()
-def hermes_home(tmp_path, monkeypatch):
+def kinqhi_home(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("KINQHI_HOME", str(home))
     yield home
 
 
 @pytest.fixture()
-def server(hermes_home):
+def server(kinqhi_home):
     with patch.dict(
         "sys.modules",
         {
-            "hermes_cli.env_loader": MagicMock(),
-            "hermes_cli.banner": MagicMock(),
+            "kinqhi_cli.env_loader": MagicMock(),
+            "kinqhi_cli.banner": MagicMock(),
         },
     ):
         mod = importlib.import_module("tui_gateway.server")
@@ -51,8 +51,8 @@ def server(hermes_home):
 
 
 @pytest.fixture()
-def db(hermes_home):
-    return SessionDB(db_path=hermes_home / "state.db")
+def db(kinqhi_home):
+    return SessionDB(db_path=kinqhi_home / "state.db")
 
 
 @pytest.fixture()

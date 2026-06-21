@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from hermes_cli import plugins_cmd
+from kinqhi_cli import plugins_cmd
 
 
 def _args(**kwargs):

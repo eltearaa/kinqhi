@@ -1,11 +1,11 @@
 """Contract test: the s6-overlay stage2 hook accepts PUID/PGID as aliases for
-HERMES_UID/HERMES_GID.
+KINQHI_UID/KINQHI_GID.
 
 Regression guard for #15290.  NAS platforms (UGOS, Synology, unRAID) bind-mount
 /opt/data from a host directory owned by the user's own UID and expect the
 LinuxServer.io PUID/PGID convention.  Without the alias those vars are silently
 ignored, the s6-setuidgid drop lands on UID 10000, and the runtime cannot read
-the volume.  HERMES_UID/HERMES_GID must still take precedence when both are
+the volume.  KINQHI_UID/KINQHI_GID must still take precedence when both are
 set.
 
 The s6-overlay rework moved bootstrap from docker/entrypoint.sh (now a shim)
@@ -33,32 +33,32 @@ def stage2_text() -> str:
 
 
 def _alias_lines(text: str) -> list[str]:
-    """The stage2 hook lines that resolve HERMES_UID/HERMES_GID from aliases."""
+    """The stage2 hook lines that resolve KINQHI_UID/KINQHI_GID from aliases."""
     return [
         line.strip()
         for line in text.splitlines()
-        if line.strip().startswith(("HERMES_UID=", "HERMES_GID="))
+        if line.strip().startswith(("KINQHI_UID=", "KINQHI_GID="))
     ]
 
 
 def test_stage2_hook_resolves_puid_pgid_aliases(stage2_text: str) -> None:
     alias_lines = _alias_lines(stage2_text)
     assert any("PUID" in line for line in alias_lines), (
-        "docker/stage2-hook.sh must resolve HERMES_UID from a PUID alias; see #15290"
+        "docker/stage2-hook.sh must resolve KINQHI_UID from a PUID alias; see #15290"
     )
     assert any("PGID" in line for line in alias_lines), (
-        "docker/stage2-hook.sh must resolve HERMES_GID from a PGID alias; see #15290"
+        "docker/stage2-hook.sh must resolve KINQHI_GID from a PGID alias; see #15290"
     )
 
 
 def _resolve(stage2_text: str, env: dict[str, str]) -> str:
     """Run the stage2 hook's alias-resolution lines in isolation and report the
-    resolved ``HERMES_UID:HERMES_GID`` pair."""
+    resolved ``KINQHI_UID:KINQHI_GID`` pair."""
     bash = shutil.which("bash")
     if bash is None:
         pytest.skip("bash not available")
     script = "\n".join(_alias_lines(stage2_text))
-    script += '\necho "${HERMES_UID:-}:${HERMES_GID:-}"\n'
+    script += '\necho "${KINQHI_UID:-}:${KINQHI_GID:-}"\n'
     proc = subprocess.run(
         [bash, "-ec", script],
         env={"PATH": os.environ.get("PATH", "")} | env,
@@ -76,7 +76,7 @@ def test_puid_pgid_populate_hermes_uid_gid(stage2_text: str) -> None:
 def test_hermes_uid_gid_take_precedence_over_aliases(stage2_text: str) -> None:
     resolved = _resolve(
         stage2_text,
-        {"HERMES_UID": "2000", "HERMES_GID": "2001", "PUID": "1000", "PGID": "10"},
+        {"KINQHI_UID": "2000", "KINQHI_GID": "2001", "PUID": "1000", "PGID": "10"},
     )
     assert resolved == "2000:2001"
 
@@ -107,4 +107,4 @@ def test_stage2_hook_runs_config_migration_as_hermes(stage2_text: str) -> None:
 
 
 def test_stage2_hook_documents_config_migration_opt_out(stage2_text: str) -> None:
-    assert "HERMES_SKIP_CONFIG_MIGRATION" in stage2_text
+    assert "KINQHI_SKIP_CONFIG_MIGRATION" in stage2_text

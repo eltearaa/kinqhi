@@ -59,7 +59,7 @@ class CopilotACPClientSafetyTests(unittest.TestCase):
 
             with patch.dict(
                 os.environ,
-                {"HOME": str(home), "HERMES_HOME": str(home / ".hermes")},
+                {"HOME": str(home), "KINQHI_HOME": str(home / ".hermes")},
                 clear=False,
             ):
                 response = self._dispatch(
@@ -80,7 +80,7 @@ class CopilotACPClientSafetyTests(unittest.TestCase):
             secret_file = root / "config.env"
             secret_file.write_text("OPENAI_API_KEY=sk-proj-abc123def456ghi789jkl012")
 
-            # agent.redact snapshots HERMES_REDACT_SECRETS at import time into
+            # agent.redact snapshots KINQHI_REDACT_SECRETS at import time into
             # _REDACT_ENABLED, so patching os.environ is a no-op. Flip the
             # module-level constant directly for the duration of the call.
             with patch("agent.redact._REDACT_ENABLED", True):
@@ -128,7 +128,7 @@ class CopilotACPClientSafetyTests(unittest.TestCase):
             safe_root.mkdir()
             outside = root / "outside.txt"
 
-            with patch.dict(os.environ, {"HERMES_WRITE_SAFE_ROOT": str(safe_root)}, clear=False):
+            with patch.dict(os.environ, {"KINQHI_WRITE_SAFE_ROOT": str(safe_root)}, clear=False):
                 response = self._dispatch(
                     {
                         "jsonrpc": "2.0",
@@ -175,13 +175,13 @@ def _fake_popen_capture(captured):
 
 
 def test_run_prompt_preserves_real_home_when_profile_home_available(monkeypatch, tmp_path):
-    hermes_home = tmp_path / "hermes"
-    (hermes_home / "home").mkdir(parents=True)
+    kinqhi_home = tmp_path / "hermes"
+    (kinqhi_home / "home").mkdir(parents=True)
     real_home = tmp_path / "real-home"
     real_home.mkdir()
 
     monkeypatch.setenv("HOME", str(real_home))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("KINQHI_HOME", str(kinqhi_home))
 
     captured = {}
     client = _make_home_client(tmp_path)
@@ -191,12 +191,12 @@ def test_run_prompt_preserves_real_home_when_profile_home_available(monkeypatch,
             client._run_prompt("hello", timeout_seconds=1)
 
     assert captured["kwargs"]["env"]["HOME"] == str(real_home)
-    assert captured["kwargs"]["env"]["HERMES_REAL_HOME"] == str(real_home)
+    assert captured["kwargs"]["env"]["KINQHI_REAL_HOME"] == str(real_home)
 
 
 def test_run_prompt_passes_home_when_parent_env_is_clean(monkeypatch, tmp_path):
     monkeypatch.delenv("HOME", raising=False)
-    monkeypatch.delenv("HERMES_HOME", raising=False)
+    monkeypatch.delenv("KINQHI_HOME", raising=False)
 
     captured = {}
     client = _make_home_client(tmp_path)

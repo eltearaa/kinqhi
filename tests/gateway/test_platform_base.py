@@ -21,7 +21,7 @@ class TestSecretCaptureGuidance:
     def test_gateway_secret_capture_message_points_to_local_setup(self):
         message = GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE
         assert "local cli" in message.lower()
-        assert "~/.hermes/.env" in message
+        assert "~/.kinqhi/.env" in message
 
 
 class TestSafeUrlForLog:
@@ -604,11 +604,11 @@ class TestMediaDeliveryPathValidation:
         # recency window + denylist). Force strict on so they keep
         # exercising the legacy path even though the public default
         # flipped to off in 2026-05.
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("KINQHI_MEDIA_DELIVERY_STRICT", "1")
         # Disable recency-based trust by default so the original allowlist
         # tests continue to exercise the strict-allowlist path. Tests that
         # specifically cover recency trust re-enable it themselves.
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_FILES", "0")
 
     def test_allows_existing_file_inside_safe_root(self, tmp_path, monkeypatch):
         root = tmp_path / "media-cache"
@@ -664,7 +664,7 @@ class TestMediaDeliveryPathValidation:
         media_file.parent.mkdir(parents=True)
         media_file.write_bytes(b"%PDF-1.4")
         self._patch_roots(monkeypatch)
-        monkeypatch.setenv("HERMES_MEDIA_ALLOW_DIRS", str(extra_root))
+        monkeypatch.setenv("KINQHI_MEDIA_ALLOW_DIRS", str(extra_root))
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(media_file)) == str(media_file.resolve())
 
@@ -677,9 +677,9 @@ class TestMediaDeliveryPathValidation:
         allowlist are accepted because the file's mtime is within the window.
         """
         self._patch_roots(monkeypatch)  # zero cache allowlist
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.delenv("KINQHI_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         fresh = tmp_path / "scratch" / "report.pdf"
         fresh.parent.mkdir(parents=True)
@@ -695,9 +695,9 @@ class TestMediaDeliveryPathValidation:
         the trust window.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "60")
+        monkeypatch.delenv("KINQHI_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_SECONDS", "60")
 
         stale = tmp_path / "stale.pdf"
         stale.write_bytes(b"%PDF-1.4")
@@ -709,8 +709,8 @@ class TestMediaDeliveryPathValidation:
     def test_recency_trust_disabled_falls_back_to_pure_allowlist(self, tmp_path, monkeypatch):
         """Setting trust_recent_files=false reverts to pre-existing strict behavior."""
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.delenv("KINQHI_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_FILES", "0")
 
         fresh = tmp_path / "report.pdf"
         fresh.write_bytes(b"%PDF-1.4")  # mtime = now
@@ -726,9 +726,9 @@ class TestMediaDeliveryPathValidation:
         ~/.ssh, ~/.aws, etc.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.delenv("KINQHI_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         # Simulate $HOME so ~/.ssh resolves into our tmp dir.
         fake_home = tmp_path / "home"
@@ -744,13 +744,13 @@ class TestMediaDeliveryPathValidation:
         """The motivating case: agent produces a PDF in a project directory.
 
         Reproduces the Discord-PDF-not-delivered bug. Before recency trust,
-        files outside ~/.hermes/cache/* were silently dropped, leaving the
+        files outside ~/.kinqhi/cache/* were silently dropped, leaving the
         user with a raw filepath in chat instead of an attachment.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.delenv("KINQHI_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         project = tmp_path / "my-project"
         report = project / "build" / "weekly-report.pdf"
@@ -762,9 +762,9 @@ class TestMediaDeliveryPathValidation:
     def test_filter_keeps_recently_produced_files(self, tmp_path, monkeypatch):
         """End-to-end: filter_local_delivery_paths routes a fresh PDF through."""
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.delenv("KINQHI_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         fresh = tmp_path / "report.pdf"
         fresh.write_bytes(b"%PDF-1.4")
@@ -792,8 +792,8 @@ class TestMediaDeliveryDefaultMode:
         )
         # Pin strict OFF — the public default. Tests that exercise the
         # strict path live in TestMediaDeliveryPathValidation.
-        monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.delenv("KINQHI_MEDIA_DELIVERY_STRICT", raising=False)
+        monkeypatch.delenv("KINQHI_MEDIA_ALLOW_DIRS", raising=False)
 
     def test_accepts_stale_file_outside_allowlist(self, tmp_path, monkeypatch):
         """The motivating case — agent says ``MEDIA:/home/user/notes.md``
@@ -854,7 +854,7 @@ class TestMediaDeliveryDefaultMode:
         assert BasePlatformAdapter.validate_media_delivery_path(str(secret)) is None
 
     def test_denylist_blocks_hermes_credentials(self, tmp_path, monkeypatch):
-        """~/.hermes/.env and ~/.hermes/auth.json stay blocked even in
+        """~/.kinqhi/.env and ~/.kinqhi/auth.json stay blocked even in
         default mode. They live under $HOME (not the system prefix list)
         so this exercises the home-relative denied paths.
         """
@@ -867,7 +867,7 @@ class TestMediaDeliveryDefaultMode:
         env_file.write_text("OPENAI_API_KEY=sk-...")
         monkeypatch.setenv("HOME", str(fake_home))
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_HOME",
+            "gateway.platforms.base._KINQHI_HOME",
             hermes_dir,
         )
 
@@ -884,14 +884,14 @@ class TestMediaDeliveryDefaultMode:
         config_file.write_text("model:\n  provider: openai\n")
         monkeypatch.setenv("HOME", str(fake_home))
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_HOME",
+            "gateway.platforms.base._KINQHI_HOME",
             hermes_dir,
         )
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(config_file)) is None
 
     def test_denylist_blocks_shared_hermes_root_config_for_profiles(self, tmp_path, monkeypatch):
-        """Profile-mode gateways must still block the shared Hermes root config."""
+        """Profile-mode gateways must still block the shared Kinqhi root config."""
         self._patch_roots(monkeypatch)
 
         fake_home = tmp_path / "home"
@@ -902,24 +902,24 @@ class TestMediaDeliveryDefaultMode:
         config_file.write_text("profiles:\n  active: work\n")
         monkeypatch.setenv("HOME", str(fake_home))
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_HOME",
+            "gateway.platforms.base._KINQHI_HOME",
             profile_home,
         )
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_ROOT",
+            "gateway.platforms.base._KINQHI_ROOT",
             hermes_root,
         )
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(config_file)) is None
 
     def test_strict_mode_envvar_restores_legacy_behavior(self, tmp_path, monkeypatch):
-        """Setting HERMES_MEDIA_DELIVERY_STRICT=1 reactivates the older
+        """Setting KINQHI_MEDIA_DELIVERY_STRICT=1 reactivates the older
         allowlist+recency logic. A stale file outside the allowlist is
         rejected.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("KINQHI_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("KINQHI_MEDIA_TRUST_RECENT_FILES", "0")
 
         stale = tmp_path / "old.pdf"
         stale.write_bytes(b"%PDF-1.4")
@@ -929,16 +929,16 @@ class TestMediaDeliveryDefaultMode:
         assert BasePlatformAdapter.validate_media_delivery_path(str(stale)) is None
 
     def test_strict_mode_truthy_aliases(self, monkeypatch, tmp_path):
-        """``HERMES_MEDIA_DELIVERY_STRICT=true|yes|on|1`` all enable strict mode."""
+        """``KINQHI_MEDIA_DELIVERY_STRICT=true|yes|on|1`` all enable strict mode."""
         self._patch_roots(monkeypatch)
         from gateway.platforms.base import _media_delivery_strict_mode
 
         for raw in ("1", "true", "TRUE", "yes", "on"):
-            monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", raw)
+            monkeypatch.setenv("KINQHI_MEDIA_DELIVERY_STRICT", raw)
             assert _media_delivery_strict_mode() is True
 
         for raw in ("0", "false", "no", "off", ""):
-            monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", raw)
+            monkeypatch.setenv("KINQHI_MEDIA_DELIVERY_STRICT", raw)
             assert _media_delivery_strict_mode() is False
 
     def test_filter_passes_default_files_through(self, tmp_path, monkeypatch):
@@ -1001,7 +1001,7 @@ class TestMediaDeliveryDefaultMode:
         assert BasePlatformAdapter.validate_media_delivery_path(str(key)) is None
 
     def test_root_home_hermes_env_still_blocked(self, tmp_path, monkeypatch):
-        """``~/.hermes/.env`` stays blocked under the $HOME exception — it is a
+        """``~/.kinqhi/.env`` stays blocked under the $HOME exception — it is a
         more-specific denied path, not reachable just because home is allowed.
         """
         self._patch_roots(monkeypatch)
@@ -1016,7 +1016,7 @@ class TestMediaDeliveryDefaultMode:
             "gateway.platforms.base._MEDIA_DELIVERY_DENIED_PREFIXES",
             (str(fake_home),),
         )
-        monkeypatch.setattr("gateway.platforms.base._HERMES_HOME", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._KINQHI_HOME", hermes_dir)
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(env_file)) is None
 
@@ -1218,24 +1218,24 @@ class TestTruncateMessage:
 
 class TestGetHumanDelay:
     def test_off_mode(self):
-        with patch.dict(os.environ, {"HERMES_HUMAN_DELAY_MODE": "off"}):
+        with patch.dict(os.environ, {"KINQHI_HUMAN_DELAY_MODE": "off"}):
             assert BasePlatformAdapter._get_human_delay() == 0.0
 
     def test_default_is_off(self):
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("HERMES_HUMAN_DELAY_MODE", None)
+            os.environ.pop("KINQHI_HUMAN_DELAY_MODE", None)
             assert BasePlatformAdapter._get_human_delay() == 0.0
 
     def test_natural_mode_range(self):
-        with patch.dict(os.environ, {"HERMES_HUMAN_DELAY_MODE": "natural"}):
+        with patch.dict(os.environ, {"KINQHI_HUMAN_DELAY_MODE": "natural"}):
             delay = BasePlatformAdapter._get_human_delay()
             assert 0.8 <= delay <= 2.5
 
     def test_natural_mode_ignores_malformed_custom_env_vars(self):
         env = {
-            "HERMES_HUMAN_DELAY_MODE": "natural",
-            "HERMES_HUMAN_DELAY_MIN_MS": "oops",
-            "HERMES_HUMAN_DELAY_MAX_MS": "still-bad",
+            "KINQHI_HUMAN_DELAY_MODE": "natural",
+            "KINQHI_HUMAN_DELAY_MIN_MS": "oops",
+            "KINQHI_HUMAN_DELAY_MAX_MS": "still-bad",
         }
         with patch.dict(os.environ, env):
             delay = BasePlatformAdapter._get_human_delay()
@@ -1243,9 +1243,9 @@ class TestGetHumanDelay:
 
     def test_custom_mode_uses_env_vars(self):
         env = {
-            "HERMES_HUMAN_DELAY_MODE": "custom",
-            "HERMES_HUMAN_DELAY_MIN_MS": "100",
-            "HERMES_HUMAN_DELAY_MAX_MS": "200",
+            "KINQHI_HUMAN_DELAY_MODE": "custom",
+            "KINQHI_HUMAN_DELAY_MIN_MS": "100",
+            "KINQHI_HUMAN_DELAY_MAX_MS": "200",
         }
         with patch.dict(os.environ, env):
             delay = BasePlatformAdapter._get_human_delay()
@@ -1253,9 +1253,9 @@ class TestGetHumanDelay:
 
     def test_custom_mode_tolerates_malformed_env_vars(self):
         env = {
-            "HERMES_HUMAN_DELAY_MODE": "custom",
-            "HERMES_HUMAN_DELAY_MIN_MS": "oops",
-            "HERMES_HUMAN_DELAY_MAX_MS": "still-bad",
+            "KINQHI_HUMAN_DELAY_MODE": "custom",
+            "KINQHI_HUMAN_DELAY_MIN_MS": "oops",
+            "KINQHI_HUMAN_DELAY_MAX_MS": "still-bad",
         }
         with patch.dict(os.environ, env):
             # falls back to the custom-mode defaults instead of crashing
@@ -1444,8 +1444,8 @@ class TestMediaDeliveryDiagnosability:
     def test_rejected_path_appears_in_log(self, tmp_path, caplog):
         outside = tmp_path / "outside.ogg"
         outside.write_bytes(b"OggS")
-        with patch.dict(os.environ, {"HERMES_MEDIA_DELIVERY_STRICT": "1",
-                                     "HERMES_MEDIA_TRUST_RECENT_FILES": "0"}), \
+        with patch.dict(os.environ, {"KINQHI_MEDIA_DELIVERY_STRICT": "1",
+                                     "KINQHI_MEDIA_TRUST_RECENT_FILES": "0"}), \
                 patch("gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS", ()):
             with caplog.at_level("WARNING"):
                 out = BasePlatformAdapter.filter_media_delivery_paths([(str(outside), False)])
@@ -1457,7 +1457,7 @@ class TestMediaDeliveryDiagnosability:
         """One crafted ~\\x00 path must not drop every other attachment."""
         good = tmp_path / "good.png"
         good.write_bytes(b"\x89PNG")
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "0")
+        monkeypatch.setenv("KINQHI_MEDIA_DELIVERY_STRICT", "0")
         out = BasePlatformAdapter.filter_media_delivery_paths([
             ("~\x00evil.png", False),
             (str(good), False),

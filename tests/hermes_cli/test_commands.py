@@ -3,7 +3,7 @@
 from prompt_toolkit.completion import CompleteEvent
 from prompt_toolkit.document import Document
 
-from hermes_cli.commands import (
+from kinqhi_cli.commands import (
     COMMAND_REGISTRY,
     COMMANDS,
     COMMANDS_BY_CATEGORY,
@@ -14,7 +14,7 @@ from hermes_cli.commands import (
     SlashCommandCompleter,
     _CMD_NAME_LIMIT,
     _SLACK_RESERVED_COMMANDS,
-    _SLACK_VIA_HERMES_ONLY,
+    _SLACK_VIA_KINQHI_ONLY,
     _TG_NAME_LIMIT,
     _clamp_command_names,
     _clamp_telegram_names,
@@ -381,7 +381,7 @@ class TestSlackNativeSlashes:
         reserved_norm = {_norm(n) for n in _SLACK_RESERVED_COMMANDS}
         # Commands deliberately routed through /hermes <command> on Slack only
         # (Slack's 50-slash cap) are expected to be absent from native slashes.
-        via_hermes_norm = {_norm(n) for n in _SLACK_VIA_HERMES_ONLY}
+        via_hermes_norm = {_norm(n) for n in _SLACK_VIA_KINQHI_ONLY}
         missing = (tg_norm - slack_norm) - reserved_norm - via_hermes_norm
         assert not missing, (
             f"commands on Telegram but missing from Slack native slashes: {sorted(missing)}"
@@ -442,7 +442,7 @@ class TestGatewayConfigGate:
         # Write a config with the gate off (default)
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: false\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         lines = gateway_help_lines()
         joined = "\n".join(lines)
@@ -452,7 +452,7 @@ class TestGatewayConfigGate:
         """When the config gate is truthy, the command should appear in help."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: true\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         lines = gateway_help_lines()
         joined = "\n".join(lines)
@@ -462,7 +462,7 @@ class TestGatewayConfigGate:
         """Quoted false must not enable config-gated gateway commands."""
         config_file = tmp_path / "config.yaml"
         config_file.write_text('display:\n  tool_progress_command: "false"\n')
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         lines = gateway_help_lines()
         joined = "\n".join(lines)
@@ -476,7 +476,7 @@ class TestGatewayConfigGate:
     def test_config_gate_excluded_from_telegram_when_off(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: false\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         names = {name for name, _ in telegram_bot_commands()}
         assert "verbose" not in names
@@ -484,7 +484,7 @@ class TestGatewayConfigGate:
     def test_config_gate_included_in_telegram_when_on(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: true\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         names = {name for name, _ in telegram_bot_commands()}
         assert "verbose" in names
@@ -492,7 +492,7 @@ class TestGatewayConfigGate:
     def test_config_gate_excluded_from_slack_when_off(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: false\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         mapping = slack_subcommand_map()
         assert "verbose" not in mapping
@@ -500,7 +500,7 @@ class TestGatewayConfigGate:
     def test_config_gate_included_in_slack_when_on(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: true\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         mapping = slack_subcommand_map()
         assert "verbose" in mapping
@@ -710,17 +710,17 @@ class TestSubcommandCompletion:
 
     def test_tools_enable_completes_toolset_names(self, monkeypatch):
         """`/tools enable ` should suggest currently-disabled toolsets."""
-        from hermes_cli import commands as commands_mod
+        from kinqhi_cli import commands as commands_mod
 
         # `web` is enabled, `spotify` is disabled — enabling should only offer
         # the disabled ones.
         monkeypatch.setattr(
-            "hermes_cli.tools_config._get_platform_tools",
+            "kinqhi_cli.tools_config._get_platform_tools",
             lambda *_a, **_k: {"web", "file"},
         )
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {})
+        monkeypatch.setattr("kinqhi_cli.config.load_config", lambda: {})
         monkeypatch.setattr(
-            "hermes_cli.tools_config._get_plugin_toolset_keys",
+            "kinqhi_cli.tools_config._get_plugin_toolset_keys",
             lambda: set(),
         )
 
@@ -733,12 +733,12 @@ class TestSubcommandCompletion:
 
     def test_tools_disable_completes_enabled_toolsets_only(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.tools_config._get_platform_tools",
+            "kinqhi_cli.tools_config._get_platform_tools",
             lambda *_a, **_k: {"web", "file"},
         )
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {})
+        monkeypatch.setattr("kinqhi_cli.config.load_config", lambda: {})
         monkeypatch.setattr(
-            "hermes_cli.tools_config._get_plugin_toolset_keys",
+            "kinqhi_cli.tools_config._get_plugin_toolset_keys",
             lambda: set(),
         )
 
@@ -749,12 +749,12 @@ class TestSubcommandCompletion:
 
     def test_tools_enable_partial_filters(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.tools_config._get_platform_tools",
+            "kinqhi_cli.tools_config._get_platform_tools",
             lambda *_a, **_k: set(),
         )
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {})
+        monkeypatch.setattr("kinqhi_cli.config.load_config", lambda: {})
         monkeypatch.setattr(
-            "hermes_cli.tools_config._get_plugin_toolset_keys",
+            "kinqhi_cli.tools_config._get_plugin_toolset_keys",
             lambda: set(),
         )
 
@@ -765,12 +765,12 @@ class TestSubcommandCompletion:
     def test_tools_enable_skips_already_listed(self, monkeypatch):
         """If the user already typed a name, don't suggest it again."""
         monkeypatch.setattr(
-            "hermes_cli.tools_config._get_platform_tools",
+            "kinqhi_cli.tools_config._get_platform_tools",
             lambda *_a, **_k: set(),
         )
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {})
+        monkeypatch.setattr("kinqhi_cli.config.load_config", lambda: {})
         monkeypatch.setattr(
-            "hermes_cli.tools_config._get_plugin_toolset_keys",
+            "kinqhi_cli.tools_config._get_plugin_toolset_keys",
             lambda: set(),
         )
 
@@ -780,15 +780,15 @@ class TestSubcommandCompletion:
 
     def test_tools_suggests_mcp_server_prefixes(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.tools_config._get_platform_tools",
+            "kinqhi_cli.tools_config._get_platform_tools",
             lambda *_a, **_k: set(),
         )
         monkeypatch.setattr(
-            "hermes_cli.config.load_config",
+            "kinqhi_cli.config.load_config",
             lambda: {"mcp_servers": {"github": {}, "linear": {}}},
         )
         monkeypatch.setattr(
-            "hermes_cli.tools_config._get_plugin_toolset_keys",
+            "kinqhi_cli.tools_config._get_plugin_toolset_keys",
             lambda: set(),
         )
 
@@ -1134,7 +1134,7 @@ class TestTelegramMenuCommands:
         (tmp_path / "config.yaml").write_text(
             "display:\n  tool_progress_command: true\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         menu, hidden = telegram_menu_commands(max_commands=30)
         names = [name for name, _desc in menu]
@@ -1157,7 +1157,7 @@ class TestTelegramMenuCommands:
     def test_includes_plugin_commands_via_lazy_discovery(self, tmp_path, monkeypatch):
         """Telegram menu generation should discover plugin slash commands on first access."""
         from unittest.mock import patch
-        import hermes_cli.plugins as plugins_mod
+        import kinqhi_cli.plugins as plugins_mod
 
         plugin_dir = tmp_path / "plugins" / "cmd-plugin"
         plugin_dir.mkdir(parents=True, exist_ok=True)
@@ -1172,7 +1172,7 @@ class TestTelegramMenuCommands:
         (tmp_path / "config.yaml").write_text(
             "plugins:\n  enabled:\n    - cmd-plugin\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         with patch.object(plugins_mod, "_plugin_manager", None):
             menu, _ = telegram_menu_commands(max_commands=100)
@@ -1192,7 +1192,7 @@ class TestTelegramMenuCommands:
             "    telegram:\n"
             "      - my-disabled-skill\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         # Mock get_skill_commands to return two skills
         fake_skills_dir = str(tmp_path / "skills")
@@ -1243,7 +1243,7 @@ class TestTelegramMenuCommands:
         lookalike_dir = tmp_path / "my-skills-extra"
         lookalike_dir.mkdir()
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text(
             f"skills:\n  external_dirs:\n    - {external_dir}\n"
         )
@@ -1293,7 +1293,7 @@ class TestTelegramMenuCommands:
         from unittest.mock import patch
         import re
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         fake_skills_dir = str(tmp_path / "skills")
         fake_cmds = {
@@ -1326,7 +1326,7 @@ class TestTelegramMenuCommands:
         """Skills whose names sanitize to empty string are silently dropped."""
         from unittest.mock import patch
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         fake_skills_dir = str(tmp_path / "skills")
         fake_cmds = {
@@ -1397,7 +1397,7 @@ class TestDiscordSkillCommands:
                 "skill_dir": f"{fake_skills_dir}/code-review",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1429,7 +1429,7 @@ class TestDiscordSkillCommands:
                 "skill_dir": f"{fake_skills_dir}/my-cool-skill",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1455,7 +1455,7 @@ class TestDiscordSkillCommands:
             }
             for i in range(20)
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1479,7 +1479,7 @@ class TestDiscordSkillCommands:
             "    discord:\n"
             "      - secret-skill\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
 
         fake_skills_dir = str(tmp_path / "skills")
         fake_cmds = {
@@ -1522,7 +1522,7 @@ class TestDiscordSkillCommands:
                 "skill_dir": f"{fake_skills_dir}/status",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1549,7 +1549,7 @@ class TestDiscordSkillCommands:
                 "skill_dir": f"{fake_skills_dir}/verbose-skill",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1576,7 +1576,7 @@ class TestDiscordSkillCommands:
                 "skill_dir": f"{fake_skills_dir}/{long_name}",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         (tmp_path / "skills").mkdir(exist_ok=True)
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
@@ -1596,7 +1596,7 @@ class TestDiscordSkillCommands:
 # Discord skill commands grouped by category
 # ---------------------------------------------------------------------------
 
-from hermes_cli.commands import discord_skill_commands_by_category  # noqa: E402
+from kinqhi_cli.commands import discord_skill_commands_by_category  # noqa: E402
 
 
 class TestDiscordSkillCommandsByCategory:
@@ -1633,7 +1633,7 @@ class TestDiscordSkillCommandsByCategory:
                 "skill_md_path": f"{fake_skills_dir}/media/gif-search/SKILL.md",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
@@ -1664,7 +1664,7 @@ class TestDiscordSkillCommandsByCategory:
                 "skill_md_path": f"{fake_skills_dir}/dogfood/SKILL.md",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
@@ -1692,7 +1692,7 @@ class TestDiscordSkillCommandsByCategory:
                 "skill_md_path": f"{fake_skills_dir}/.hub/some-skill/SKILL.md",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
@@ -1726,7 +1726,7 @@ class TestDiscordSkillCommandsByCategory:
                 "skill_md_path": f"{fake_skills_dir}/mlops/inference/vllm/SKILL.md",
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
@@ -1773,7 +1773,7 @@ class TestDiscordSkillCommandsByCategory:
                     "skill_md_path": f"{fake_skills_dir}/{cat}/{name}/SKILL.md",
                 }
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", tmp_path / "skills"),
@@ -1830,7 +1830,7 @@ class TestDiscordSkillCommandsByCategory:
                 "skill_md_path": str(external_dir / "mlops" / "external-skill" / "SKILL.md"),
             },
         }
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("KINQHI_HOME", str(tmp_path))
         with (
             patch("agent.skill_commands.get_skill_commands", return_value=fake_cmds),
             patch("tools.skills_tool.SKILLS_DIR", local_skills_dir),
@@ -1866,8 +1866,8 @@ class TestPluginCommandEnumeration:
     """
 
     def _patch_plugin_commands(self, monkeypatch, commands):
-        """Monkeypatch hermes_cli.plugins.get_plugin_commands() to a fixed dict."""
-        from hermes_cli import plugins as _plugins_mod
+        """Monkeypatch kinqhi_cli.plugins.get_plugin_commands() to a fixed dict."""
+        from kinqhi_cli import plugins as _plugins_mod
 
         monkeypatch.setattr(
             _plugins_mod, "get_plugin_commands", lambda: dict(commands)
@@ -1942,7 +1942,7 @@ class TestPluginCommandEnumeration:
 
     def test_is_gateway_known_command_recognizes_plugin_commands(self, monkeypatch):
         """is_gateway_known_command() must return True for plugin commands."""
-        from hermes_cli.commands import is_gateway_known_command
+        from kinqhi_cli.commands import is_gateway_known_command
 
         self._patch_plugin_commands(monkeypatch, {
             "metricas": {
@@ -1957,8 +1957,8 @@ class TestPluginCommandEnumeration:
 
     def test_is_gateway_known_command_still_recognizes_builtins(self, monkeypatch):
         """Built-in commands must remain known even when plugin discovery fails."""
-        from hermes_cli import plugins as _plugins_mod
-        from hermes_cli.commands import is_gateway_known_command
+        from kinqhi_cli import plugins as _plugins_mod
+        from kinqhi_cli.commands import is_gateway_known_command
 
         def _boom():
             raise RuntimeError("plugin system down")
@@ -1971,7 +1971,7 @@ class TestPluginCommandEnumeration:
 
     def test_plugin_enumerator_handles_missing_plugin_manager(self, monkeypatch):
         """Enumerators must never raise when plugin discovery raises."""
-        from hermes_cli import plugins as _plugins_mod
+        from kinqhi_cli import plugins as _plugins_mod
 
         def _boom():
             raise RuntimeError("plugin system down")

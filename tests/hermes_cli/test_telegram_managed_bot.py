@@ -1,11 +1,11 @@
-"""Tests for hermes_cli.telegram_managed_bot — QR codes, deep links, pairing."""
+"""Tests for kinqhi_cli.telegram_managed_bot — QR codes, deep links, pairing."""
 
 from __future__ import annotations
 
 from pathlib import PureWindowsPath
 from unittest.mock import MagicMock, patch
 
-from hermes_cli.telegram_managed_bot import (
+from kinqhi_cli.telegram_managed_bot import (
     DEFAULT_MANAGER_BOT,
     TELEGRAM_ONBOARDING_URL_ENV,
     TelegramBotSetupResult,
@@ -76,9 +76,9 @@ class TestGenerateDeepLink:
         link = generate_deep_link(
             manager_bot="Bot",
             suggested_username="test_bot",
-            suggested_name="Hermes & Friends",
+            suggested_name="Kinqhi & Friends",
         )
-        assert "Hermes+%26+Friends" in link
+        assert "Kinqhi+%26+Friends" in link
 
 
 class TestPairingNonce:
@@ -120,27 +120,27 @@ class TestCreatePairing:
             "pairing_id": "abcdefghijklmnop",
             "poll_token": "secret-token",
             "suggested_username": "hermes_abcdefghijklmnop_bot",
-            "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
-            "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
+            "deep_link": "https://t.me/newbot/KinqhiSetupBot/hermes_abcdefghijklmnop_bot?name=Kinqhi+Agent",
+            "qr_payload": "https://t.me/newbot/KinqhiSetupBot/hermes_abcdefghijklmnop_bot?name=Kinqhi+Agent",
             "expires_at": "2026-05-18T00:00:00.000Z",
         }
 
         with patch(
-            "hermes_cli.telegram_managed_bot.httpx.post", return_value=mock_resp
+            "kinqhi_cli.telegram_managed_bot.httpx.post", return_value=mock_resp
         ) as post:
-            pairing = create_pairing("https://api.example.com", bot_name="Hermes Agent")
+            pairing = create_pairing("https://api.example.com", bot_name="Kinqhi")
 
         assert pairing == TelegramPairing(
             pairing_id="abcdefghijklmnop",
             poll_token="secret-token",
             suggested_username="hermes_abcdefghijklmnop_bot",
-            deep_link="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
-            qr_payload="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
+            deep_link="https://t.me/newbot/KinqhiSetupBot/hermes_abcdefghijklmnop_bot?name=Kinqhi+Agent",
+            qr_payload="https://t.me/newbot/KinqhiSetupBot/hermes_abcdefghijklmnop_bot?name=Kinqhi+Agent",
             expires_at="2026-05-18T00:00:00.000Z",
         )
         post.assert_called_once_with(
             "https://api.example.com/v1/telegram/pairings",
-            json={"bot_name": "Hermes Agent"},
+            json={"bot_name": "Kinqhi"},
             timeout=10.0,
         )
 
@@ -148,7 +148,7 @@ class TestCreatePairing:
         mock_resp = MagicMock()
         mock_resp.status_code = 500
         with patch(
-            "hermes_cli.telegram_managed_bot.httpx.post", return_value=mock_resp
+            "kinqhi_cli.telegram_managed_bot.httpx.post", return_value=mock_resp
         ):
             assert create_pairing("https://api.example.com") is None
 
@@ -157,7 +157,7 @@ class TestCreatePairing:
         mock_resp.status_code = 201
         mock_resp.json.return_value = {"pairing_id": "missing-poll-token"}
         with patch(
-            "hermes_cli.telegram_managed_bot.httpx.post", return_value=mock_resp
+            "kinqhi_cli.telegram_managed_bot.httpx.post", return_value=mock_resp
         ):
             assert create_pairing("https://api.example.com") is None
 
@@ -166,7 +166,7 @@ class TestCreatePairing:
         mock_resp = MagicMock()
         mock_resp.status_code = 500
         with patch(
-            "hermes_cli.telegram_managed_bot.httpx.post", return_value=mock_resp
+            "kinqhi_cli.telegram_managed_bot.httpx.post", return_value=mock_resp
         ) as post:
             create_pairing()
         assert post.call_args.args[0] == "https://worker.example/v1/telegram/pairings"
@@ -178,8 +178,8 @@ class TestPollForToken:
             pairing_id="abcdefghijklmnop",
             poll_token="secret-token",
             suggested_username="hermes_abcdefghijklmnop_bot",
-            deep_link="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot",
-            qr_payload="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot",
+            deep_link="https://t.me/newbot/KinqhiSetupBot/hermes_abcdefghijklmnop_bot",
+            qr_payload="https://t.me/newbot/KinqhiSetupBot/hermes_abcdefghijklmnop_bot",
         )
 
     def test_immediate_success(self):
@@ -193,9 +193,9 @@ class TestPollForToken:
         }
 
         with patch(
-            "hermes_cli.telegram_managed_bot.httpx.get", return_value=mock_resp
+            "kinqhi_cli.telegram_managed_bot.httpx.get", return_value=mock_resp
         ) as get:
-            with patch("hermes_cli.telegram_managed_bot.time.sleep"):
+            with patch("kinqhi_cli.telegram_managed_bot.time.sleep"):
                 token = poll_for_token(
                     "https://api.example.com", self.pairing(), timeout=5
                 )
@@ -219,8 +219,8 @@ class TestPollForToken:
             "token": VALID_TOKEN,
         }
 
-        with patch("hermes_cli.telegram_managed_bot.httpx.get", return_value=mock_resp):
-            with patch("hermes_cli.telegram_managed_bot.time.sleep"):
+        with patch("kinqhi_cli.telegram_managed_bot.httpx.get", return_value=mock_resp):
+            with patch("kinqhi_cli.telegram_managed_bot.time.sleep"):
                 result = poll_for_setup_result(
                     "https://api.example.com", self.pairing(), timeout=5
                 )
@@ -241,7 +241,7 @@ class TestPollForToken:
             "token": VALID_TOKEN,
         }
 
-        with patch("hermes_cli.telegram_managed_bot.httpx.get", return_value=mock_resp):
+        with patch("kinqhi_cli.telegram_managed_bot.httpx.get", return_value=mock_resp):
             result = poll_for_setup_result(
                 "https://api.example.com", self.pairing(), timeout=5
             )
@@ -262,10 +262,10 @@ class TestPollForToken:
             "token": "not-a-real-token",
         }
 
-        with patch("hermes_cli.telegram_managed_bot.httpx.get", return_value=mock_resp):
-            with patch("hermes_cli.telegram_managed_bot.time.sleep"):
+        with patch("kinqhi_cli.telegram_managed_bot.httpx.get", return_value=mock_resp):
+            with patch("kinqhi_cli.telegram_managed_bot.time.sleep"):
                 with patch(
-                    "hermes_cli.telegram_managed_bot.time.monotonic"
+                    "kinqhi_cli.telegram_managed_bot.time.monotonic"
                 ) as mock_time:
                     mock_time.side_effect = [0, 0, 999]
                     assert (
@@ -280,10 +280,10 @@ class TestPollForToken:
         mock_resp.status_code = 200
         mock_resp.json.return_value = {"status": "waiting"}
 
-        with patch("hermes_cli.telegram_managed_bot.httpx.get", return_value=mock_resp):
-            with patch("hermes_cli.telegram_managed_bot.time.sleep"):
+        with patch("kinqhi_cli.telegram_managed_bot.httpx.get", return_value=mock_resp):
+            with patch("kinqhi_cli.telegram_managed_bot.time.sleep"):
                 with patch(
-                    "hermes_cli.telegram_managed_bot.time.monotonic"
+                    "kinqhi_cli.telegram_managed_bot.time.monotonic"
                 ) as mock_time:
                     mock_time.side_effect = [0, 0, 999]
                     token = poll_for_token(
@@ -309,8 +309,8 @@ class TestPollForToken:
                 return not_ready
             return ready
 
-        with patch("hermes_cli.telegram_managed_bot.httpx.get", side_effect=fake_get):
-            with patch("hermes_cli.telegram_managed_bot.time.sleep"):
+        with patch("kinqhi_cli.telegram_managed_bot.httpx.get", side_effect=fake_get):
+            with patch("kinqhi_cli.telegram_managed_bot.time.sleep"):
                 token = poll_for_token(
                     "https://api.example.com", self.pairing(), timeout=30
                 )
@@ -319,25 +319,25 @@ class TestPollForToken:
 
 class TestSetupTelegramAuto:
     def test_setup_helper_exists(self):
-        from hermes_cli.setup import _setup_telegram_auto
+        from kinqhi_cli.setup import _setup_telegram_auto
 
         assert callable(_setup_telegram_auto)
 
     def test_setup_result_passes_profile_name_for_profile_home(self, monkeypatch, tmp_path):
-        from hermes_cli import setup
+        from kinqhi_cli import setup
 
         seen = {}
         profile_home = tmp_path / ".hermes" / "profiles" / "oracle"
         profile_home.mkdir(parents=True)
 
-        monkeypatch.setattr(setup, "get_hermes_home", lambda: profile_home)
+        monkeypatch.setattr(setup, "get_kinqhi_home", lambda: profile_home)
 
         def fake_auto_setup_telegram_bot_result(*, profile_name=None):
             seen["profile_name"] = profile_name
             return None
 
         monkeypatch.setattr(
-            "hermes_cli.telegram_managed_bot.auto_setup_telegram_bot_result",
+            "kinqhi_cli.telegram_managed_bot.auto_setup_telegram_bot_result",
             fake_auto_setup_telegram_bot_result,
         )
 
@@ -345,10 +345,10 @@ class TestSetupTelegramAuto:
         assert seen["profile_name"] == "oracle"
 
     def test_profile_name_from_home_path_handles_windows_separators(self):
-        from hermes_cli.setup import _profile_name_from_hermes_home
+        from kinqhi_cli.setup import _profile_name_from_kinqhi_home
 
         assert (
-            _profile_name_from_hermes_home(
+            _profile_name_from_kinqhi_home(
                 PureWindowsPath(r"C:\Users\test\AppData\Local\hermes\profiles\oracle")
             )
             == "oracle"

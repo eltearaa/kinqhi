@@ -577,7 +577,7 @@ export default function App() {
                   className="font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground uppercase"
                   style={{ mixBlendMode: "plus-lighter" }}
                 >
-                  Hermes
+                  Kinqhi
                   <br />
                   Agent
                 </Typography>
@@ -903,7 +903,7 @@ function SidebarSystemActions({
   const navigate = useNavigate();
   const { activeAction, isBusy, isRunning, pendingAction, runAction } =
     useSystemActions();
-  const canUpdateHermes = status?.can_update_hermes === true;
+  const canUpdateKinqhi = status?.can_update_hermes === true;
 
   const items: SystemActionItem[] = [
     {
@@ -914,12 +914,12 @@ function SidebarSystemActions({
       spin: true,
     },
   ];
-  if (canUpdateHermes) {
+  if (canUpdateKinqhi) {
     items.push({
       action: "update",
       icon: Download,
-      label: t.status.updateHermes,
-      runningLabel: t.status.updatingHermes,
+      label: t.status.updateKinqhi,
+      runningLabel: t.status.updatingKinqhi,
       spin: false,
     });
   }

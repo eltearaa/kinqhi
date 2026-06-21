@@ -356,10 +356,10 @@ class TestSetupWizardDeploymentShape:
 
         # Bypass config.yaml + connection test side effects.
         monkeypatch.setattr(
-            "hermes_cli.config.load_config", lambda: {"memory": {}}, raising=False,
+            "kinqhi_cli.config.load_config", lambda: {"memory": {}}, raising=False,
         )
         monkeypatch.setattr(
-            "hermes_cli.config.save_config", lambda c: None, raising=False,
+            "kinqhi_cli.config.save_config", lambda c: None, raising=False,
         )
 
         class _FakeClientCfg:

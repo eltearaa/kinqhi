@@ -1,7 +1,7 @@
 """Tests for gateway restart-loop defenses (#30719).
 
 Covers:
-- Defense 1: gateway stop/restart refuse when _HERMES_GATEWAY=1
+- Defense 1: gateway stop/restart refuse when _KINQHI_GATEWAY=1
 - Defense 2: cron create rejects prompts containing gateway lifecycle commands
 - _contains_gateway_lifecycle_command pattern matching
 """
@@ -12,7 +12,7 @@ from argparse import Namespace
 
 import pytest
 
-from hermes_cli.cron import (
+from kinqhi_cli.cron import (
     _contains_gateway_lifecycle_command,
     cron_command,
 )
@@ -26,9 +26,9 @@ class TestGatewayLifecyclePattern:
     """Verify the regex catches gateway lifecycle commands."""
 
     @pytest.mark.parametrize("text", [
-        "hermes gateway restart",
-        "hermes gateway stop",
-        "hermes gateway start",
+        "kinqhi gateway restart",
+        "kinqhi gateway stop",
+        "kinqhi gateway start",
         "hermes  gateway  restart",         # double spaces
         "Hermez Gateway Restart".lower().replace("z", "s"),  # case handled
         "HERMES GATEWAY RESTART",           # uppercase
@@ -40,15 +40,15 @@ class TestGatewayLifecyclePattern:
         "launchctl kickstart gui/501/ai.hermes.gateway",
         "launchctl unload ~/Library/LaunchAgents/ai.hermes.gateway.plist",
         "launchctl stop ai.hermes.gateway",
-        "systemctl restart hermes-gateway",
-        "systemctl stop hermes-gateway.service",
-        "systemctl start hermes-gateway",
+        "systemctl restart kinqhi-gateway",
+        "systemctl stop kinqhi-gateway.service",
+        "systemctl start kinqhi-gateway",
     ])
     def test_service_manager_commands(self, text):
         assert _contains_gateway_lifecycle_command(text), f"Should match: {text!r}"
 
     @pytest.mark.parametrize("text", [
-        "kill hermes gateway process",
+        "kill kinqhi gateway process",
         "pkill -f hermes.*gateway",
     ])
     def test_kill_commands(self, text):
@@ -56,9 +56,9 @@ class TestGatewayLifecyclePattern:
 
     @pytest.mark.parametrize("text", [
         "restart the server application",
-        "hermes cron list",
-        "hermes update",
-        "hermes config set model claude",
+        "kinqhi cron list",
+        "kinqhi update",
+        "kinqhi config set model claude",
         "echo 'just a normal cron job'",
         "run the backup script",
         "gateway is running fine",
@@ -85,7 +85,7 @@ class TestCronCreateLifecycleBlock:
         args = Namespace(
             cron_command="create",
             schedule="30m",
-            prompt="Upgrade hermes then run hermes gateway restart",
+            prompt="Upgrade hermes then run kinqhi gateway restart",
             name=None,
             deliver=None,
             repeat=None,
@@ -124,7 +124,7 @@ class TestCronCreateLifecycleBlock:
 
     def test_block_script_with_lifecycle_command(self, tmp_path, capsys):
         script = tmp_path / "restart.sh"
-        script.write_text("#!/bin/bash\nhermes gateway restart\n")
+        script.write_text("#!/bin/bash\nkinqhi gateway restart\n")
         args = Namespace(
             cron_command="create",
             schedule="1h",
@@ -195,19 +195,19 @@ class TestCronCreateLifecycleBlock:
 # ---------------------------------------------------------------------------
 
 class TestGatewaySelfTargetingGuard:
-    """Verify hermes gateway stop/restart refuse when _HERMES_GATEWAY=1."""
+    """Verify kinqhi gateway stop/restart refuse when _KINQHI_GATEWAY=1."""
 
     def test_stop_refuses_inside_gateway(self, monkeypatch):
-        monkeypatch.setenv("_HERMES_GATEWAY", "1")
-        from hermes_cli.gateway import gateway_command
+        monkeypatch.setenv("_KINQHI_GATEWAY", "1")
+        from kinqhi_cli.gateway import gateway_command
         args = Namespace(gateway_command="stop", all=False, system=False)
         with pytest.raises(SystemExit) as exc_info:
             gateway_command(args)
         assert exc_info.value.code == 1
 
     def test_restart_refuses_inside_gateway(self, monkeypatch):
-        monkeypatch.setenv("_HERMES_GATEWAY", "1")
-        from hermes_cli.gateway import gateway_command
+        monkeypatch.setenv("_KINQHI_GATEWAY", "1")
+        from kinqhi_cli.gateway import gateway_command
         args = Namespace(gateway_command="restart", all=False, system=False)
         with pytest.raises(SystemExit) as exc_info:
             gateway_command(args)
@@ -218,8 +218,8 @@ class TestGatewaySelfTargetingGuard:
         # fire. Prove control reaches the real stop path (rather than driving
         # real signal delivery, which would trip the live-system guard) by
         # short-circuiting the first downstream call with a sentinel.
-        monkeypatch.delenv("_HERMES_GATEWAY", raising=False)
-        import hermes_cli.gateway as gw
+        monkeypatch.delenv("_KINQHI_GATEWAY", raising=False)
+        import kinqhi_cli.gateway as gw
 
         class _Reached(Exception):
             pass
@@ -237,8 +237,8 @@ class TestGatewaySelfTargetingGuard:
         # Same as above for restart: guard must not fire when the marker is
         # unset. The first thing restart does after the guard is the s6
         # dispatch check — sentinel it so we never reach real signal delivery.
-        monkeypatch.delenv("_HERMES_GATEWAY", raising=False)
-        import hermes_cli.gateway as gw
+        monkeypatch.delenv("_KINQHI_GATEWAY", raising=False)
+        import kinqhi_cli.gateway as gw
 
         class _Reached(Exception):
             pass
@@ -258,9 +258,9 @@ class TestGatewaySelfTargetingGuard:
 # ---------------------------------------------------------------------------
 
 class TestTerminalToolGatewayLifecycleGuard:
-    """terminal_tool must refuse gateway lifecycle commands when _HERMES_GATEWAY=1.
+    """terminal_tool must refuse gateway lifecycle commands when _KINQHI_GATEWAY=1.
 
-    Issue #37453: systemctl --user restart hermes-gateway runs as a child of the
+    Issue #37453: systemctl --user restart kinqhi-gateway runs as a child of the
     gateway process.  When systemd delivers SIGTERM the gateway kills its own
     restart command mid-execution — the service may never restart.  The guard
     must fire before execution, unconditionally (force=True cannot bypass it).
@@ -284,15 +284,15 @@ class TestTerminalToolGatewayLifecycleGuard:
         monkeypatch.setattr(tt, "_task_env_overrides", {})
         monkeypatch.setattr(tt, "_get_env_config", self._minimal_config)
         if inside_gateway:
-            monkeypatch.setenv("_HERMES_GATEWAY", "1")
+            monkeypatch.setenv("_KINQHI_GATEWAY", "1")
         else:
-            monkeypatch.delenv("_HERMES_GATEWAY", raising=False)
+            monkeypatch.delenv("_KINQHI_GATEWAY", raising=False)
 
     @pytest.mark.parametrize("cmd", [
-        "systemctl restart hermes-gateway",
-        "systemctl --user restart hermes-gateway",
-        "systemctl stop hermes-gateway.service",
-        "hermes gateway restart",
+        "systemctl restart kinqhi-gateway",
+        "systemctl --user restart kinqhi-gateway",
+        "systemctl stop kinqhi-gateway.service",
+        "kinqhi gateway restart",
         "launchctl kickstart gui/501/ai.hermes.gateway",
         "pkill -f hermes.*gateway",
     ])
@@ -310,7 +310,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         self._patch_env(monkeypatch, self._make_fake_env(), inside_gateway=True)
 
         result = json.loads(tt.terminal_tool(
-            command="systemctl restart hermes-gateway", force=True
+            command="systemctl restart kinqhi-gateway", force=True
         ))
 
         assert result["exit_code"] == 1
@@ -337,7 +337,7 @@ class TestTerminalToolGatewayLifecycleGuard:
         assert calls == ["systemctl status nginx"]
 
     def test_guard_inactive_outside_gateway(self, monkeypatch):
-        """Without _HERMES_GATEWAY=1 the lifecycle guard must not fire."""
+        """Without _KINQHI_GATEWAY=1 the lifecycle guard must not fire."""
         import tools.terminal_tool as tt
 
         calls = []
@@ -351,9 +351,9 @@ class TestTerminalToolGatewayLifecycleGuard:
         self._patch_env(monkeypatch, _FakeEnv(), inside_gateway=False)
         monkeypatch.setattr(tt, "_check_all_guards", lambda cmd, env: {"approved": True})
 
-        result = json.loads(tt.terminal_tool(command="systemctl restart hermes-gateway"))
+        result = json.loads(tt.terminal_tool(command="systemctl restart kinqhi-gateway"))
 
         # Outside the gateway the lifecycle guard doesn't block — the normal
         # approval flow handles it (here mocked as approved).
         assert result["exit_code"] == 0
-        assert calls == ["systemctl restart hermes-gateway"]
+        assert calls == ["systemctl restart kinqhi-gateway"]

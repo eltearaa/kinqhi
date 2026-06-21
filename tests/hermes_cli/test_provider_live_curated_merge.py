@@ -7,7 +7,7 @@ returns a stale or incomplete list, the static curated models from
 
 from unittest.mock import MagicMock, patch
 
-from hermes_cli.models import _PROVIDER_MODELS, provider_model_ids
+from kinqhi_cli.models import _PROVIDER_MODELS, provider_model_ids
 
 
 class TestGenericProviderLiveCuratedMerge:
@@ -30,7 +30,7 @@ class TestGenericProviderLiveCuratedMerge:
 
         with (
             patch("providers.get_provider_profile", return_value=profile),
-            patch("hermes_cli.auth.resolve_api_key_provider_credentials", return_value={"api_key": "k", "base_url": ""}),
+            patch("kinqhi_cli.auth.resolve_api_key_provider_credentials", return_value={"api_key": "k", "base_url": ""}),
         ):
             result = provider_model_ids("zai")
 
@@ -54,8 +54,8 @@ class TestGenericProviderLiveCuratedMerge:
 
         with (
             patch("providers.get_provider_profile", return_value=profile),
-            patch("hermes_cli.auth.resolve_api_key_provider_credentials", return_value={"api_key": "k", "base_url": ""}),
-            patch.dict("hermes_cli.models._PROVIDER_MODELS", {"zai": curated}),
+            patch("kinqhi_cli.auth.resolve_api_key_provider_credentials", return_value={"api_key": "k", "base_url": ""}),
+            patch.dict("kinqhi_cli.models._PROVIDER_MODELS", {"zai": curated}),
         ):
             result = provider_model_ids("zai")
 
@@ -71,8 +71,8 @@ class TestGenericProviderLiveCuratedMerge:
 
         with (
             patch("providers.get_provider_profile", return_value=profile),
-            patch("hermes_cli.auth.resolve_api_key_provider_credentials", return_value={"api_key": "k", "base_url": ""}),
-            patch.dict("hermes_cli.models._PROVIDER_MODELS", {"zai": curated}),
+            patch("kinqhi_cli.auth.resolve_api_key_provider_credentials", return_value={"api_key": "k", "base_url": ""}),
+            patch.dict("kinqhi_cli.models._PROVIDER_MODELS", {"zai": curated}),
         ):
             result = provider_model_ids("zai")
 
@@ -86,8 +86,8 @@ class TestGenericProviderLiveCuratedMerge:
 
         with (
             patch("providers.get_provider_profile", return_value=profile),
-            patch("hermes_cli.auth.resolve_api_key_provider_credentials", return_value={"api_key": "k", "base_url": ""}),
-            patch.dict("hermes_cli.models._PROVIDER_MODELS", {"zai": []}),
+            patch("kinqhi_cli.auth.resolve_api_key_provider_credentials", return_value={"api_key": "k", "base_url": ""}),
+            patch.dict("kinqhi_cli.models._PROVIDER_MODELS", {"zai": []}),
         ):
             result = provider_model_ids("zai")
 
@@ -104,9 +104,9 @@ class TestGenericProviderLiveCuratedMerge:
 
         with (
             patch("providers.get_provider_profile", return_value=profile),
-            patch("hermes_cli.auth.resolve_api_key_provider_credentials", return_value={"api_key": "k", "base_url": ""}),
-            patch.dict("hermes_cli.models._PROVIDER_MODELS", {"zai": curated}),
-            patch("hermes_cli.models._merge_with_models_dev", return_value=curated),
+            patch("kinqhi_cli.auth.resolve_api_key_provider_credentials", return_value={"api_key": "k", "base_url": ""}),
+            patch.dict("kinqhi_cli.models._PROVIDER_MODELS", {"zai": curated}),
+            patch("kinqhi_cli.models._merge_with_models_dev", return_value=curated),
         ):
             result = provider_model_ids("zai")
 
@@ -123,15 +123,15 @@ class TestValidateRequestedModelCuratedFallback:
         Patches the real ``_PROVIDER_MODELS`` source (not the function under
         test) so the curated-catalog fallback is genuinely exercised.
         """
-        from hermes_cli.models import validate_requested_model
+        from kinqhi_cli.models import validate_requested_model
 
         # Live API returns only glm-5.1, but curated has glm-5.2
         live_models = ["glm-5.1"]
         curated = ["glm-5.2", "glm-5.1", "glm-5", "glm-4.5"]
 
         with (
-            patch("hermes_cli.models.fetch_api_models", return_value=live_models),
-            patch.dict("hermes_cli.models._PROVIDER_MODELS", {"zai": curated}),
+            patch("kinqhi_cli.models.fetch_api_models", return_value=live_models),
+            patch.dict("kinqhi_cli.models._PROVIDER_MODELS", {"zai": curated}),
         ):
             result = validate_requested_model("glm-5.2", "zai", api_key="dummy")
 
@@ -142,14 +142,14 @@ class TestValidateRequestedModelCuratedFallback:
 
     def test_model_not_in_curated_nor_live_is_rejected(self):
         """When a model is in neither live nor curated, it should be rejected."""
-        from hermes_cli.models import validate_requested_model
+        from kinqhi_cli.models import validate_requested_model
 
         live_models = ["glm-5.1"]
         curated = ["glm-5.1", "glm-5", "glm-4.5"]
 
         with (
-            patch("hermes_cli.models.fetch_api_models", return_value=live_models),
-            patch.dict("hermes_cli.models._PROVIDER_MODELS", {"zai": curated}),
+            patch("kinqhi_cli.models.fetch_api_models", return_value=live_models),
+            patch.dict("kinqhi_cli.models._PROVIDER_MODELS", {"zai": curated}),
         ):
             result = validate_requested_model("nonexistent-model", "zai", api_key="dummy")
 
@@ -157,11 +157,11 @@ class TestValidateRequestedModelCuratedFallback:
 
     def test_model_in_live_is_accepted_without_curated_check(self):
         """When the model is in the live API, it should be accepted directly."""
-        from hermes_cli.models import validate_requested_model
+        from kinqhi_cli.models import validate_requested_model
 
         live_models = ["glm-5.1", "glm-5"]
 
-        with patch("hermes_cli.models.fetch_api_models", return_value=live_models):
+        with patch("kinqhi_cli.models.fetch_api_models", return_value=live_models):
             result = validate_requested_model("glm-5.1", "zai", api_key="dummy")
 
         assert result["accepted"] is True
@@ -177,16 +177,16 @@ class TestValidateRequestedModelCuratedFallback:
         catalog.  The fallback keys on ``_provider_keys(normalized)``, so
         catalog membership is checked per-provider, never globally.
         """
-        from hermes_cli.models import validate_requested_model
+        from kinqhi_cli.models import validate_requested_model
 
         # `some-other-model` is known to a DIFFERENT provider, not to zai.
         # zai's live listing also omits it.  It must be rejected.
         live_models = ["glm-5.1"]
 
         with (
-            patch("hermes_cli.models.fetch_api_models", return_value=live_models),
+            patch("kinqhi_cli.models.fetch_api_models", return_value=live_models),
             patch.dict(
-                "hermes_cli.models._PROVIDER_MODELS",
+                "kinqhi_cli.models._PROVIDER_MODELS",
                 {"zai": ["glm-5.2", "glm-5.1"], "openrouter": ["some-other-model"]},
             ),
         ):
