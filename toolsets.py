@@ -381,12 +381,6 @@ TOOLSETS = {
         "includes": []
     },
 
-    "hermes-webhook": {
-        "description": "Webhook toolset - receive and process external webhook events",
-        "tools": _HERMES_WEBHOOK_SAFE_TOOLS,
-        "includes": []
-    },
-
     "hermes-gateway": {
         "description": "Gateway toolset - union of all messaging platform tools",
         "tools": [],

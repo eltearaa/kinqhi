@@ -28,10 +28,14 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from gateway.whatsapp_identity import (
+try:
+    from gateway.whatsapp_identity import (
     expand_whatsapp_aliases,
     normalize_whatsapp_identifier,
 )
+except ImportError:
+    expand_whatsapp_aliases = lambda x: [x]
+    normalize_whatsapp_identifier = lambda x: x
 from hermes_constants import get_hermes_dir
 from utils import atomic_replace
 

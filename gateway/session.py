@@ -60,10 +60,16 @@ from .config import (
     SessionResetPolicy,  # noqa: F401 — re-exported via gateway/__init__.py
     HomeChannel,
 )
-from .whatsapp_identity import (
+try:
+    from .whatsapp_identity import (
     canonical_whatsapp_identifier,
     normalize_whatsapp_identifier,  # noqa: F401 - re-exported for gateway.session callers
 )
+except ImportError:
+    canonical_whatsapp_identifier = lambda x: x
+    normalize_whatsapp_identifier = lambda x: x
+    expand_whatsapp_aliases = lambda x: [x]
+    normalize_whatsapp_identifier = lambda x: x
 from utils import atomic_replace
 
 
@@ -202,10 +208,10 @@ class SessionContext:
 
 
 _PII_SAFE_PLATFORMS = frozenset({
-    Platform.WHATSAPP,
-    Platform.SIGNAL,
-    Platform.TELEGRAM,
-    Platform.BLUEBUBBLES,
+    getattr(Platform, "WHATSAPP", None),
+    getattr(Platform, "SIGNAL", None),
+    getattr(Platform, "TELEGRAM", None),
+    getattr(Platform, "BLUEBUBBLES", None),
 })
 """Platforms where user IDs can be safely redacted (no in-message mention system
 that requires raw IDs).  Discord is excluded because mentions use ``<@user_id>``
@@ -302,7 +308,7 @@ def build_session_context_prompt(
     if context.source.chat_topic:
         lines.append(f"**Channel Topic:** {context.source.chat_topic}")
 
-    if context.source.platform == Platform.MATRIX:
+    if context.source.platform == getattr(Platform, "MATRIX", None):
         src = context.source
         room_name = src.chat_name or src.chat_id
         room_id = _hash_chat_id(src.chat_id) if redact_pii else src.chat_id
@@ -340,7 +346,7 @@ def build_session_context_prompt(
         lines.append(f"**User ID:** {uid}")
 
     # Platform-specific behavioral notes
-    if context.source.platform == Platform.SLACK:
+    if context.source.platform == getattr(Platform, "SLACK", None):
         lines.append("")
         lines.append(
             "**Platform notes:** You are running inside Slack. "
@@ -378,7 +384,7 @@ def build_session_context_prompt(
                 "Do not promise to perform these actions. If the user asks, explain "
                 "that you can only read messages sent directly to you and respond."
             )
-    elif context.source.platform == Platform.BLUEBUBBLES:
+    elif context.source.platform == getattr(Platform, "BLUEBUBBLES", None):
         lines.append("")
         lines.append(
             "**Platform notes:** You are responding via iMessage. "
@@ -390,7 +396,7 @@ def build_session_context_prompt(
             "If the user needs a detailed answer, give the short version first "
             "and offer to elaborate."
         )
-    elif context.source.platform == Platform.YUANBAO:
+    elif context.source.platform == getattr(Platform, "YUANBAO", None):
         lines.append("")
         lines.append(
             "**Platform notes:** You are running inside Yuanbao. "
@@ -681,7 +687,7 @@ def build_session_key(
     platform = source.platform.value
     if source.chat_type == "dm":
         dm_chat_id = source.chat_id
-        if source.platform == Platform.WHATSAPP:
+        if source.platform == getattr(Platform, "WHATSAPP", None):
             dm_chat_id = canonical_whatsapp_identifier(source.chat_id)
 
         if dm_chat_id:
@@ -695,7 +701,7 @@ def build_session_key(
         # single cached agent ends up serving multiple people's conversations —
         # cross-user history bleed.  participant_id keeps DMs isolated per user.
         dm_participant_id = source.user_id_alt or source.user_id
-        if dm_participant_id and source.platform == Platform.WHATSAPP:
+        if dm_participant_id and source.platform == getattr(Platform, "WHATSAPP", None):
             dm_participant_id = (
                 canonical_whatsapp_identifier(str(dm_participant_id))
                 or dm_participant_id
@@ -709,7 +715,7 @@ def build_session_key(
         return f"{ns}:{platform}:dm"
 
     participant_id = source.user_id_alt or source.user_id
-    if participant_id and source.platform == Platform.WHATSAPP:
+    if participant_id and source.platform == getattr(Platform, "WHATSAPP", None):
         # Same JID/LID-flip bug as the DM case: without canonicalisation, a
         # single group member gets two isolated per-user sessions when the
         # bridge reshuffles alias forms.
