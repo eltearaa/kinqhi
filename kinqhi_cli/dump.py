@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 from kinqhi_cli.config import get_kinqhi_home, get_env_path, get_project_root, load_config
-from kinqhi_cli.env_loader import load_hermes_dotenv
+from kinqhi_cli.env_loader import load_kinqhi_dotenv
 from kinqhi_constants import display_kinqhi_home
 from agent.skill_utils import is_excluded_skill_path
 
@@ -246,7 +246,7 @@ def run_dump(args):
 
     # Load env from .env file so key checks work
     env_path = get_env_path()
-    load_hermes_dotenv(
+    load_kinqhi_dotenv(
         kinqhi_home=env_path.parent,
         project_env=get_project_root() / ".env",
     )

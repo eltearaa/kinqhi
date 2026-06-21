@@ -209,7 +209,7 @@ def _sanitize_env_file_if_needed(path: Path) -> None:
         pass  # best-effort — don't block gateway startup
 
 
-def load_hermes_dotenv(
+def load_kinqhi_dotenv(
     *,
     kinqhi_home: str | os.PathLike | None = None,
     project_env: str | os.PathLike | None = None,

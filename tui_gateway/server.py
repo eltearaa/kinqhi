@@ -23,7 +23,7 @@ from kinqhi_constants import (
     reset_kinqhi_home_override,
     set_kinqhi_home_override,
 )
-from kinqhi_cli.env_loader import load_hermes_dotenv
+from kinqhi_cli.env_loader import load_kinqhi_dotenv
 from utils import is_truthy_value
 from tui_gateway.transport import (
     StdioTransport,
@@ -36,7 +36,7 @@ from tui_gateway.transport import (
 logger = logging.getLogger(__name__)
 
 _kinqhi_home = get_kinqhi_home()
-load_hermes_dotenv(
+load_kinqhi_dotenv(
     kinqhi_home=_kinqhi_home, project_env=Path(__file__).parent.parent / ".env"
 )
 

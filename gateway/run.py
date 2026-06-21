@@ -1274,9 +1274,9 @@ _kinqhi_home = get_kinqhi_home()
 # Load environment variables from ~/.kinqhi/.env first.
 # User-managed env files should override stale shell exports on restart.
 from dotenv import load_dotenv  # noqa: F401  # backward-compat for tests that monkeypatch this symbol
-from kinqhi_cli.env_loader import load_hermes_dotenv
+from kinqhi_cli.env_loader import load_kinqhi_dotenv
 _env_path = _kinqhi_home / '.env'
-load_hermes_dotenv(kinqhi_home=_kinqhi_home, project_env=Path(__file__).resolve().parents[1] / '.env')
+load_kinqhi_dotenv(kinqhi_home=_kinqhi_home, project_env=Path(__file__).resolve().parents[1] / '.env')
 
 
 def _reload_runtime_env_preserving_config_authority() -> None:
@@ -1301,7 +1301,7 @@ def _reload_runtime_env_preserving_config_authority() -> None:
         _bridge_max_turns_from_config(_kinqhi_home)
         return
 
-    load_hermes_dotenv(
+    load_kinqhi_dotenv(
         kinqhi_home=_kinqhi_home,
         project_env=Path(__file__).resolve().parents[1] / '.env',
     )

@@ -11,7 +11,7 @@ import shutil
 from pathlib import Path
 
 from kinqhi_cli.config import get_project_root, get_kinqhi_home, get_env_path
-from kinqhi_cli.env_loader import load_hermes_dotenv
+from kinqhi_cli.env_loader import load_kinqhi_dotenv
 from kinqhi_constants import display_kinqhi_home
 
 PROJECT_ROOT = get_project_root()
@@ -20,7 +20,7 @@ _DHH = display_kinqhi_home()  # user-facing display path (e.g. ~/.kinqhi or ~/.k
 
 # Load environment variables from ~/.kinqhi/.env so API key checks work
 _env_path = get_env_path()
-load_hermes_dotenv(kinqhi_home=_env_path.parent, project_env=PROJECT_ROOT / ".env")
+load_kinqhi_dotenv(kinqhi_home=_env_path.parent, project_env=PROJECT_ROOT / ".env")
 
 from kinqhi_cli.colors import Colors, color
 from kinqhi_cli.models import _KINQHI_USER_AGENT

@@ -95,10 +95,10 @@ def _setup_logging() -> None:
 
 def _load_env() -> None:
     """Load .env from KINQHI_HOME (default ``~/.kinqhi``)."""
-    from kinqhi_cli.env_loader import load_hermes_dotenv
+    from kinqhi_cli.env_loader import load_kinqhi_dotenv
 
     kinqhi_home = get_kinqhi_home()
-    loaded = load_hermes_dotenv(kinqhi_home=kinqhi_home)
+    loaded = load_kinqhi_dotenv(kinqhi_home=kinqhi_home)
     if loaded:
         for env_file in loaded:
             logging.getLogger(__name__).info("Loaded env from %s", env_file)

@@ -116,7 +116,7 @@ from agent.process_bootstrap import (
 from agent.iteration_budget import IterationBudget
 
 
-from kinqhi_cli.env_loader import load_hermes_dotenv
+from kinqhi_cli.env_loader import load_kinqhi_dotenv
 from kinqhi_cli.timeouts import (
     get_provider_request_timeout,
     get_provider_stale_timeout,
@@ -124,7 +124,7 @@ from kinqhi_cli.timeouts import (
 
 _kinqhi_home = get_kinqhi_home()
 _project_env = Path(__file__).parent / '.env'
-_loaded_env_paths = load_hermes_dotenv(kinqhi_home=_kinqhi_home, project_env=_project_env)
+_loaded_env_paths = load_kinqhi_dotenv(kinqhi_home=_kinqhi_home, project_env=_project_env)
 if _loaded_env_paths:
     for _env_path in _loaded_env_paths:
         logger.info("Loaded environment variables from %s", _env_path)

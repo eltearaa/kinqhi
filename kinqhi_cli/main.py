@@ -510,9 +510,9 @@ _apply_profile_override()
 # Load .env from ~/.kinqhi/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
 from kinqhi_cli.config import get_kinqhi_home
-from kinqhi_cli.env_loader import load_hermes_dotenv
+from kinqhi_cli.env_loader import load_kinqhi_dotenv
 
-load_hermes_dotenv(project_env=PROJECT_ROOT / ".env")
+load_kinqhi_dotenv(project_env=PROJECT_ROOT / ".env")
 
 # Bridge security.redact_secrets from config.yaml → KINQHI_REDACT_SECRETS env
 # var BEFORE kinqhi_logging imports agent.redact (which snapshots the flag at
